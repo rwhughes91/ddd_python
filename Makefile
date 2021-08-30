@@ -3,6 +3,9 @@ ENTRYPOINTS=ddd_python tests
 test:
 	coverage run -m pytest --rootdir tests
 
+report:
+	coverage report
+
 tox:
 	tox
 
