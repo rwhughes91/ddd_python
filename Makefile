@@ -20,3 +20,24 @@ check:
 format:
 	black $(ENTRYPOINTS)
 	isort $(ENTRYPOINTS)
+
+up:
+	docker-compose build
+	docker-compose up -d --force-recreate
+
+down:
+	docker-compose down --remove-orphans
+
+downup: down up
+
+migrate:
+	alembic revision --autogenerate
+
+upgrade:
+	alembic upgrade
+
+downgrade:
+	alembic downgrade
+
+head:
+	alembic current
