@@ -15,7 +15,7 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_all(self) -> Batch:
+    def list(self) -> Batch:
         raise NotImplementedError
 
 
@@ -29,7 +29,7 @@ class FakeRepository(AbstractRepository):
     def get(self, reference):
         return next(b for b in self._batches if b.reference == reference)
 
-    def list_all(self):
+    def list(self):
         return list(self._batches)
 
 
@@ -43,5 +43,5 @@ class SqlAlchemyRepository(AbstractRepository):
     def get(self, reference):
         return self.session.query(Batch).filter_by(reference=reference).one()
 
-    def list_all(self):
+    def list(self):
         return self.session.query(Batch).all()

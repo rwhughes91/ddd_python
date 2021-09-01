@@ -58,7 +58,7 @@ def test_repository_can_get_batches(session):
         {"today": date.today()},
     )
     repo = SqlAlchemyRepository(session)
-    batches = repo.list_all()
+    batches = repo.list()
 
     assert len(batches) == 2
 
