@@ -3,8 +3,8 @@ from datetime import date
 from typing import List, Optional, Set
 
 
-# setting eq + frozen to true adds a hash method which we can use in Set for uniqueness
-@dataclass(eq=True, frozen=True)
+# unsafe hash must be used because sqlalchemy edits dataclass
+@dataclass(unsafe_hash=True)
 class OrderLine:
     orderid: str
     sku: str
@@ -24,6 +24,10 @@ class Batch:
         self.eta = eta
         self._purchased_quantity = qty
         self._allocations = set()  # type Set[Orderline]
+
+    @property
+    def allocations(self):
+        return [self._allocations]
 
     @property  # no setter means any setting will raise Exception
     def allocated_quantity(self) -> int:

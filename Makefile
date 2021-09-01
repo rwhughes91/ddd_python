@@ -1,7 +1,7 @@
 ENTRYPOINTS=ddd_python tests
 
 test:
-	coverage run -m pytest --rootdir tests
+	coverage run -m pytest -s --rootdir tests
 
 report:
 	coverage report
@@ -20,3 +20,24 @@ check:
 format:
 	black $(ENTRYPOINTS)
 	isort $(ENTRYPOINTS)
+
+up:
+	docker-compose build
+	docker-compose up -d --force-recreate
+
+down:
+	docker-compose down --remove-orphans
+
+downup: down up
+
+migrate:
+	alembic revision --autogenerate
+
+upgrade:
+	alembic upgrade
+
+downgrade:
+	alembic downgrade
+
+head:
+	alembic current
