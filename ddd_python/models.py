@@ -25,6 +25,10 @@ class Batch:
         self._purchased_quantity = qty
         self._allocations = set()  # type Set[Orderline]
 
+    @property
+    def allocations(self):
+        return [self._allocations]
+
     @property  # no setter means any setting will raise Exception
     def allocated_quantity(self) -> int:
         return sum(line.qty for line in self._allocations)

@@ -1,7 +1,7 @@
 ENTRYPOINTS=ddd_python tests
 
 test:
-	coverage run -m pytest --rootdir tests
+	coverage run -m pytest -s --rootdir tests
 
 report:
 	coverage report

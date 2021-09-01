@@ -35,7 +35,7 @@ def start_mappers():
         batches,
         properties={
             "_purchased_quantity": batches.c.qty,
-            "_allocations": relationship(OrderLine, backref="batch"),
+            "allocations": relationship(OrderLine, backref="batch"),
         },
     ),
 
