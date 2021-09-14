@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import List, Optional, Set
+from typing import List, Set
 
 
 # unsafe hash must be used because sqlalchemy edits dataclass
@@ -14,11 +14,11 @@ class OrderLine:
 class Batch:
     reference: str
     sku: str
-    eta: Optional[date]
+    eta: date
     _purchased_quantity: int
     _allocations: Set[OrderLine]
 
-    def __init__(self, ref: str, sku: str, qty: int, eta: Optional[date]) -> None:
+    def __init__(self, ref: str, sku: str, qty: int, eta: date) -> None:
         self.reference = ref
         self.sku = sku
         self.eta = eta

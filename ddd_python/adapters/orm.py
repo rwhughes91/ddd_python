@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Date, ForeignKey, Integer, MetaData, String, Table
 from sqlalchemy.orm import registry, relationship
 
-from .models import Batch, OrderLine
+from ddd_python.domain import model
 
 metadata = MetaData()
 
@@ -29,13 +29,13 @@ batches = Table(
 
 
 def start_mappers():
-    mapper_registry.map_imperatively(OrderLine, order_lines)
+    mapper_registry.map_imperatively(model.OrderLine, order_lines)
     mapper_registry.map_imperatively(
-        Batch,
+        model.Batch,
         batches,
         properties={
             "_purchased_quantity": batches.c.qty,
-            "allocations": relationship(OrderLine, backref="batch"),
+            "allocations": relationship(model.OrderLine, backref="batch"),
         },
     ),
 
