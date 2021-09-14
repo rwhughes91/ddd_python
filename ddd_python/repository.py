@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 from sqlalchemy.orm import Session
 
@@ -15,7 +16,7 @@ class AbstractRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_all(self) -> Batch:
+    def list(self) -> List[Batch]:
         raise NotImplementedError
 
 
@@ -29,7 +30,7 @@ class FakeRepository(AbstractRepository):
     def get(self, reference):
         return next(b for b in self._batches if b.reference == reference)
 
-    def list_all(self):
+    def list(self):
         return list(self._batches)
 
 
@@ -37,11 +38,11 @@ class SqlAlchemyRepository(AbstractRepository):
     def __init__(self, session: Session):
         self.session = session
 
-    def add(self, batch):
+    def add(self, batch: Batch) -> None:
         self.session.add(batch)
 
-    def get(self, reference):
+    def get(self, reference: str) -> Batch:
         return self.session.query(Batch).filter_by(reference=reference).one()
 
-    def list_all(self):
+    def list(self) -> List[Batch]:
         return self.session.query(Batch).all()
