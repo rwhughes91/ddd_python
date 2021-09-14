@@ -1,7 +1,7 @@
 from datetime import date
 
-from ddd_python.models import Batch, OrderLine
-from ddd_python.repository import SqlAlchemyRepository
+from ddd_python.adapters import repository
+from ddd_python.domain import model
 
 
 def insert_orderline(session):
@@ -30,9 +30,9 @@ def insert_batch(session):
 
 
 def test_repository_can_save_a_batch(session):
-    batch = Batch("batch1", "RUSTY-SOAPDISH", 100, eta=date.today())
+    batch = model.Batch("batch1", "RUSTY-SOAPDISH", 100, eta=date.today())
 
-    repo = SqlAlchemyRepository(session)
+    repo = repository.SqlAlchemyRepository(session)
     repo.add(batch)
     session.commit()
 
@@ -43,7 +43,7 @@ def test_repository_can_save_a_batch(session):
 def test_repository_can_get_a_batch(session):
     reference = "batches1"
     insert_batch(session)
-    repo = SqlAlchemyRepository(session)
+    repo = repository.SqlAlchemyRepository(session)
     batch = repo.get(reference)
 
     assert batch.reference == reference
@@ -57,7 +57,7 @@ def test_repository_can_get_batches(session):
         ("batches2", "GENERIC-SOFA-2", 4, :today)""",
         {"today": date.today()},
     )
-    repo = SqlAlchemyRepository(session)
+    repo = repository.SqlAlchemyRepository(session)
     batches = repo.list()
 
     assert len(batches) == 2
@@ -65,12 +65,12 @@ def test_repository_can_get_batches(session):
 
 def test_repository_can_retrieve_a_batch_with_allocations(session):
     orderline_id = insert_orderline(session)
-    repo = SqlAlchemyRepository(session)
+    repo = repository.SqlAlchemyRepository(session)
 
-    batch = Batch("batch1", "RUSTY-SOAPDISH", 100, eta=date.today())
+    batch = model.Batch("batch1", "RUSTY-SOAPDISH", 100, eta=date.today())
     repo.add(batch)
 
-    orderline = session.query(OrderLine).filter_by(id=orderline_id).first()
+    orderline = session.query(model.OrderLine).filter_by(id=orderline_id).first()
     orderline.batch = batch
 
     session.commit()

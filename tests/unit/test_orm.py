@@ -1,4 +1,4 @@
-from ddd_python.models import OrderLine
+from ddd_python.domain import model
 
 
 def test_orderline_mapper_can_load_lines(session):
@@ -9,15 +9,15 @@ def test_orderline_mapper_can_load_lines(session):
         '("order2", "BLUE-LIPSTICK", 14)'
     )
     expected = [
-        OrderLine("order1", "RED-CHAIR", 12),
-        OrderLine("order1", "RED-TABLE", 13),
-        OrderLine("order2", "BLUE-LIPSTICK", 14),
+        model.OrderLine("order1", "RED-CHAIR", 12),
+        model.OrderLine("order1", "RED-TABLE", 13),
+        model.OrderLine("order2", "BLUE-LIPSTICK", 14),
     ]
-    assert session.query(OrderLine).all() == expected
+    assert session.query(model.OrderLine).all() == expected
 
 
 def test_orderline_mapper_can_save_lines(session):
-    new_line = OrderLine("order1", "DECORATIVE-WIDGET", 12)
+    new_line = model.OrderLine("order1", "DECORATIVE-WIDGET", 12)
     session.add(new_line)
     session.commit()
 
