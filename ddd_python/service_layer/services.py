@@ -1,34 +1,51 @@
-from typing import List
+from datetime import date
+from typing import Dict, List
 
-from sqlalchemy.orm import Session
-
-from ddd_python.adapters import repository
 from ddd_python.domain import model
 
-from .errors import InvalidSku
+from . import errors, unit_of_work
 
 
-def allocate_order(
-    line: model.OrderLine, repo: repository.AbstractRepository, session: Session
+def allocate(
+    orderid: str,
+    sku: str,
+    qty: int,
+    uow: unit_of_work.AbstractUnitOfWork,
 ) -> str:
-    batches = repo.list()
-    if not is_valid_sku(line.sku, batches):
-        raise InvalidSku(f"Invalid sku {line.sku}")
-    batch_ref = model.allocate(line, batches)
-    session.commit()
-    return batch_ref
+    line = model.OrderLine(orderid, sku, qty)
+    with uow:
+        batches = uow.batches.list()
+        if not is_valid_sku(line.sku, batches):
+            raise errors.InvalidSku(f"Invalid sku {line.sku}")
+        batch_ref = model.allocate(line, batches)
+        uow.commit()
+        return batch_ref
 
 
-def list_batches(repo: repository.AbstractRepository) -> List[model.Batch]:
-    return repo.list()
+def list_batches(uow: unit_of_work.AbstractUnitOfWork) -> List[Dict[str, object]]:
+    with uow:
+        batches = [
+            {"ref": batch.reference, "eta": batch.eta} for batch in uow.batches.list()
+        ]
+        return batches
 
 
 def add_batch(
-    batch: model.Batch, repo: repository.AbstractRepository, session: Session
+    ref: str, sku: str, qty: int, eta: date, uow: unit_of_work.AbstractUnitOfWork
 ) -> str:
-    repo.add(batch)
-    session.commit()
-    return batch.reference
+    with uow:
+        batch = model.Batch(ref, sku, qty, eta)
+        uow.batches.add(batch)
+        uow.commit()
+        return batch.reference
+
+
+def edit_batch(ref: str, eta: date, uow: unit_of_work.AbstractUnitOfWork) -> str:
+    with uow:
+        batch = uow.batches.get(ref)
+        batch.eta = eta
+        uow.commit()
+        return batch.reference
 
 
 def is_valid_sku(sku, batches):

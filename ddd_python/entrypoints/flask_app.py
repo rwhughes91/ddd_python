@@ -1,51 +1,57 @@
 from flask import Flask, request
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from ddd_python import config
-from ddd_python.adapters import orm, repository
-from ddd_python.domain import model
-from ddd_python.service_layer import services
+from ddd_python.adapters import orm
+from ddd_python.service_layer import services, unit_of_work
 
 orm.start_mappers()
-get_session = sessionmaker(bind=create_engine(config.postgres_uri))
 app = Flask(__name__)
 
 
 @app.route("/allocate", methods=["POST"])
 def allocate_endpoint():
-    session = get_session()
-    repo = repository.SqlAlchemyRepository(session)
-    line = model.OrderLine(
-        request.json.get("orderid"), request.json.get("sku"), request.json.get("qty")
+    uow = unit_of_work.SqlAlchemyUnitOfWork()
+    batchref = services.allocate(
+        request.json.get("orderid"),
+        request.json.get("sku"),
+        request.json.get("qty"),
+        uow,
     )
-    batchref = services.allocate_order(line, repo, session)
 
     return {"batchref": batchref}, 201
 
 
 @app.route("/batches", methods=["GET"])
 def list_batches():
-    session = get_session()
-    repo = repository.SqlAlchemyRepository(session)
-    batches = services.list_batches(repo)
+    uow = unit_of_work.SqlAlchemyUnitOfWork()
+    batches = services.list_batches(uow)
 
-    return {"batches": [batch.reference for batch in batches]}, 200
+    return {"batches": batches}, 200
 
 
 @app.route("/batches", methods=["POST"])
 def add_batch():
-    session = get_session()
-    repo = repository.SqlAlchemyRepository(session)
-    batch = model.Batch(
+    uow = unit_of_work.SqlAlchemyUnitOfWork()
+    batchref = services.add_batch(
         request.json.get("ref"),
         request.json.get("sku"),
         request.json.get("qty"),
         request.json.get("eta"),
+        uow,
     )
-    batchref = services.add_batch(batch, repo, session)
 
     return {"batchref": batchref}, 201
+
+
+@app.route("/batches", methods=["PUT"])
+def edit_batch():
+    uow = unit_of_work.SqlAlchemyUnitOfWork()
+    batchref = services.edit_batch(
+        request.json.get("ref"),
+        request.json.get("eta"),
+        uow,
+    )
+
+    return {"batchref": batchref}, 200
 
 
 if __name__ == "__main__":
