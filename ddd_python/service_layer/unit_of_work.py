@@ -10,8 +10,8 @@ from ddd_python.adapters import repository
 class AbstractUnitOfWork(ABC):
     batches: repository.AbstractRepository
 
-    def __enter__(self, *args):
-        raise NotImplementedError
+    def __enter__(self):
+        return self
 
     def __exit__(self, *args):
         self.rollback()
