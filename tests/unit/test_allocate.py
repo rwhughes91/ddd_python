@@ -12,7 +12,8 @@ def test_prefers_current_stock_batches_to_shipments():
     )
     line = model.OrderLine("oref", "RETRO-CLOCK", 10)
 
-    model.allocate(line, [in_stock_batch, shipment_batch])
+    product = model.Product("RETRO-CLOCK", [in_stock_batch, shipment_batch])
+    product.allocate(line)
 
     assert in_stock_batch.available_quantity == 90
     assert shipment_batch.available_quantity == 100
@@ -28,7 +29,8 @@ def test_prefers_earlier_batches():
     )
     line = model.OrderLine("order1", "MINIMALIST-SPOON", 10)
 
-    model.allocate(line, [medium, earliest, latest])
+    product = model.Product("MINIMALIST-SPOON", [medium, earliest, latest])
+    product.allocate(line)
 
     assert earliest.available_quantity == 90
     assert medium.available_quantity == 100
@@ -44,13 +46,16 @@ def test_returns_allocated_batch_ref():
         eta=date.today() + timedelta(days=1),
     )
     line = model.OrderLine("oref", "HIGHBROW-POSTER", 10)
-    allocation = model.allocate(line, [in_stock_batch, shipment_batch])
+    product = model.Product("HIGHBROW-POSTER", [in_stock_batch, shipment_batch])
+    allocation = product.allocate(line)
+
     assert allocation == in_stock_batch.reference
 
 
 def test_raises_out_of_stock_exception_if_cannot_allocate():
     batch = model.Batch("batch1", "SMALL-FORK", 10, eta=date.today())
-    model.allocate(model.OrderLine("order1", "SMALL-FORK", 10), [batch])
+    product = model.Product("SMALL-FORK", [batch])
+    product.allocate(model.OrderLine("order1", "SMALL-FORK", 10))
 
     with pytest.raises(model.OutOfStock, match="SMALL-FORK"):
-        model.allocate(model.OrderLine("order2", "SMALL-FORK", 1), [batch])
+        product.allocate(model.OrderLine("order2", "SMALL-FORK", 1))

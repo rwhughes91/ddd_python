@@ -29,53 +29,67 @@ def insert_batch(session):
     return batch_id
 
 
-def test_repository_can_save_a_batch(session):
-    batch = model.Batch("batch1", "RUSTY-SOAPDISH", 100, eta=date.today())
+def insert_product(session):
+    session.execute('INSERT INTO products (sku) VALUES ("GENERIC-SOFA")')
+    [[product_id]] = session.execute(
+        "SELECT id FROM products WHERE sku=:sku", {"sku": "GENERIC-SOFA"}
+    )
+    return product_id
 
-    repo = repository.SqlAlchemyRepository(session)
-    repo.add(batch)
+
+def test_repository_can_save_a_product(session):
+    batch = model.Batch("batch1", "RUSTY-SOAPDISH", 100, eta=date.today())
+    product = model.Product("RUSTY-SOAPDISH", [batch])
+
+    repo = repository.SqlAlchemyProductRepository(session)
+    repo.add(product)
     session.commit()
 
-    rows = session.execute('SELECT reference, sku, qty, eta FROM "batches"')
-    assert list(rows) == [("batch1", "RUSTY-SOAPDISH", 100, str(date.today()))]
+    products = session.execute('SELECT sku FROM "products"')
+    batches = session.execute('SELECT reference, sku, qty, eta FROM "batches"')
+    assert list(products) == [("RUSTY-SOAPDISH",)]
+    assert list(batches) == [("batch1", "RUSTY-SOAPDISH", 100, str(date.today()))]
 
 
-def test_repository_can_get_a_batch(session):
-    reference = "batches1"
-    insert_batch(session)
-    repo = repository.SqlAlchemyRepository(session)
-    batch = repo.get(reference)
+def test_repository_can_get_a_product(session):
+    sku = "GENERIC-SOFA"
+    insert_product(session)
+    repo = repository.SqlAlchemyProductRepository(session)
+    product = repo.get(sku)
 
-    assert batch.reference == reference
+    assert product.sku == sku
 
 
-def test_repository_can_get_batches(session):
+def test_repository_can_get_products(session):
     session.execute(
-        "INSERT INTO batches (reference, sku, qty, eta)"
+        "INSERT INTO products (sku)"
         """VALUES
-        ("batches1", "GENERIC-SOFA", 12, :today),
-        ("batches2", "GENERIC-SOFA-2", 4, :today)""",
-        {"today": date.today()},
+        ("GENERIC-SOFA"),
+        ("GENERIC-SOFA-2")""",
     )
-    repo = repository.SqlAlchemyRepository(session)
-    batches = repo.list()
+    repo = repository.SqlAlchemyProductRepository(session)
+    products = repo.list()
 
-    assert len(batches) == 2
+    assert len(products) == 2
 
 
 def test_repository_can_retrieve_a_batch_with_allocations(session):
     orderline_id = insert_orderline(session)
-    repo = repository.SqlAlchemyRepository(session)
+    batch_id = insert_batch(session)
+    product_id = insert_product(session)
 
-    batch = model.Batch("batch1", "RUSTY-SOAPDISH", 100, eta=date.today())
-    repo.add(batch)
-
+    product = session.query(model.Product).filter_by(id=product_id).first()
+    batch = session.query(model.Batch).filter_by(id=batch_id).first()
+    batch.product = product
     orderline = session.query(model.OrderLine).filter_by(id=orderline_id).first()
     orderline.batch = batch
 
     session.commit()
 
-    retrieved_batch = repo.get("batch1")
+    repo = repository.SqlAlchemyProductRepository(session)
 
-    assert len(retrieved_batch.allocations) == 1
-    assert retrieved_batch.allocations[0] == orderline
+    retrieved_product = repo.get("GENERIC-SOFA")
+
+    assert len(retrieved_product.batches) == 1
+    assert len(retrieved_product.batches[0].allocations) == 1
+    assert retrieved_product.batches[0].allocations[0] == orderline
