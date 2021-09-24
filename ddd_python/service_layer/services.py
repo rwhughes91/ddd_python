@@ -22,6 +22,20 @@ def allocate(
         raise errors.InvalidSku(f"Invalid sku {sku}")
 
 
+def list_products(sku: str, uow: unit_of_work.AbstractUnitOfWork):
+    with uow:
+        products = uow.products.list()
+        return [{"sku": product.sku} for product in products]
+
+
+def add_product(sku: str, uow: unit_of_work.AbstractUnitOfWork):
+    with uow:
+        product = model.Product(sku, [])
+        uow.products.add(product)
+        uow.commit()
+        return product.sku
+
+
 def list_batches(
     sku: str, uow: unit_of_work.AbstractUnitOfWork
 ) -> List[Dict[str, object]]:
@@ -42,7 +56,7 @@ def add_batch(
             batch = model.Batch(ref, sku, qty, eta)
             product.batches.append(batch)
             uow.commit()
-            return batch.reference
+            return batch.sku
         raise errors.InvalidSku(f"Invalid sku {sku}")
 
 

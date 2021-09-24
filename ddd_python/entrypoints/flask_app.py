@@ -20,6 +20,20 @@ def allocate_endpoint():
     return {"batchref": batchref}, 201
 
 
+@app.route("/products", methods=["GET"])
+def list_products():
+    uow = unit_of_work.SqlAlchemyUnitOfWork()
+    products = services.list_products(request.json.get("sku"), uow)
+    return {"products": products}, 200
+
+
+@app.route("/products", methods=["POST"])
+def add_products():
+    uow = unit_of_work.SqlAlchemyUnitOfWork()
+    productref = services.add_product(request.json.get("sku"), uow)
+    return {"productref": productref}, 201
+
+
 @app.route("/batches", methods=["GET"])
 def list_batches():
     uow = unit_of_work.SqlAlchemyUnitOfWork()
