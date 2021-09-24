@@ -8,7 +8,7 @@ from ddd_python.adapters import repository
 
 
 class AbstractUnitOfWork(ABC):
-    batches: repository.AbstractRepository
+    products: repository.AbstractProductRepository
 
     def __enter__(self):
         return self
@@ -27,7 +27,7 @@ class AbstractUnitOfWork(ABC):
 
 class FakeUnitOfWork(AbstractUnitOfWork):
     def __init__(self):
-        self.batches = repository.FakeRepository([])
+        self.products = repository.FakeProductRepository([])
         self.committed = False
 
     def commit(self):
@@ -50,7 +50,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
     def __enter__(self):
         self.session = self.session_factory()
-        self.batches = repository.SqlAlchemyRepository(self.session)
+        self.products = repository.SqlAlchemyProductRepository(self.session)
 
     def __exit__(self, *args):
         self.session.close()

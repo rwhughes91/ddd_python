@@ -1,48 +1,52 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Set
 
 from sqlalchemy.orm import Session
 
 from ddd_python.domain import model
 
 
-class AbstractRepository(ABC):
+class AbstractProductRepository(ABC):
     @abstractmethod
-    def add(self, batch: model.Batch):
+    def add(self, batch: model.Product):
         raise NotImplementedError
 
     @abstractmethod
-    def get(self, reference) -> model.Batch:
+    def get(self, sku: str) -> model.Product:
         raise NotImplementedError
 
     @abstractmethod
-    def list(self) -> List[model.Batch]:
+    def list(self) -> List[model.Product]:
         raise NotImplementedError
 
 
-class FakeRepository(AbstractRepository):
-    def __init__(self, batches):
-        self._batches = set(batches)
+class FakeProductRepository(AbstractProductRepository):
+    _products: Set[model.Product]
 
-    def add(self, batch):
-        self._batches.add(batch)
+    def __init__(self, products: List[model.Product]):
+        self._products = set(products)
 
-    def get(self, reference):
-        return next(b for b in self._batches if b.reference == reference)
+    def add(self, product: model.Product):
+        self._products.add(product)
+
+    def get(self, sku: str):
+        return next(p for p in self._products if p.sku == sku)
 
     def list(self):
-        return list(self._batches)
+        return list(self._products)
 
 
-class SqlAlchemyRepository(AbstractRepository):
+class SqlAlchemyProductRepository(AbstractProductRepository):
+    session: Session
+
     def __init__(self, session: Session):
         self.session = session
 
-    def add(self, batch: model.Batch) -> None:
-        self.session.add(batch)
+    def add(self, product: model.Product) -> None:
+        self.session.add(product)
 
-    def get(self, reference: str) -> model.Batch:
-        return self.session.query(model.Batch).filter_by(reference=reference).one()
+    def get(self, sku: str) -> model.Product:
+        return self.session.query(model.Product).filter_by(sku=sku).one()
 
-    def list(self) -> List[model.Batch]:
-        return self.session.query(model.Batch).all()
+    def list(self) -> List[model.Product]:
+        return self.session.query(model.Product).all()

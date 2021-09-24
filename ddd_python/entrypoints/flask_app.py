@@ -23,7 +23,7 @@ def allocate_endpoint():
 @app.route("/batches", methods=["GET"])
 def list_batches():
     uow = unit_of_work.SqlAlchemyUnitOfWork()
-    batches = services.list_batches(uow)
+    batches = services.list_batches(request.json.get("sku"), uow)
 
     return {"batches": batches}, 200
 
@@ -46,6 +46,7 @@ def add_batch():
 def edit_batch():
     uow = unit_of_work.SqlAlchemyUnitOfWork()
     batchref = services.edit_batch(
+        request.json.get("sku"),
         request.json.get("ref"),
         request.json.get("eta"),
         uow,

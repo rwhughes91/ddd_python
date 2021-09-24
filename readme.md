@@ -14,6 +14,7 @@ Takeaways
 Notes
 
 1. we didn't add a save method to our repository but that is very common
+2. Common to have 1 repository that holds list/get/add for all aggregates + save for each type. Its just as common to have 1 repository for each aggregate for each type. Also common to have abstract repositories / interfaces for each aggregate. This allows you to add more custom methods / fields that you want on each implementation (more flexible). We will switch to this in chapter 5.
 
 Takeaways
 

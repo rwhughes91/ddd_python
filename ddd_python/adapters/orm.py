@@ -11,20 +11,28 @@ order_lines = Table(
     "order_lines",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("batch_id", Integer, ForeignKey("batches.id")),
     Column("sku", String(255), nullable=False),
     Column("qty", Integer, nullable=False),
     Column("orderid", String(255)),
-    Column("batch_id", Integer, ForeignKey("batches.id")),
 )
 
 batches = Table(
     "batches",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("product_id", Integer, ForeignKey("products.id")),
     Column("reference", String(255), nullable=False, unique=True),
     Column("qty", Integer, nullable=False),
     Column("eta", Date, nullable=False),
     Column("sku", String(255), nullable=False),
+)
+
+products = Table(
+    "products",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("sku", String(255), nullable=False, unique=True),
 )
 
 
@@ -38,6 +46,11 @@ def start_mappers():
             "allocations": relationship(model.OrderLine, backref="batch"),
         },
     ),
+    mapper_registry.map_imperatively(
+        model.Product,
+        products,
+        properties={"batches": relationship(model.Batch, backref="product")},
+    )
 
 
 def clear_mappers():
