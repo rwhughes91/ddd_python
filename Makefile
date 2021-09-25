@@ -34,7 +34,7 @@ migrate:
 	alembic revision --autogenerate
 
 upgrade:
-	alembic upgrade
+	alembic upgrade head
 
 downgrade:
 	alembic downgrade
