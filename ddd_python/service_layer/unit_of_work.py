@@ -38,9 +38,7 @@ class FakeUnitOfWork(AbstractUnitOfWork):
 
 
 DEFAULT_SESSION_FACTORY = sessionmaker(
-    bind=create_engine(
-        config.postgres_uri,
-    )
+    bind=create_engine(config.postgres_uri, isolation_level="REPEATABLE READ")
 )
 
 
