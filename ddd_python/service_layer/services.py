@@ -54,7 +54,7 @@ def add_batch(
         product = uow.products.get(sku)
         if product:
             batch = model.Batch(ref, sku, qty, eta)
-            product.batches.append(batch)
+            product.order_batches([batch])
             uow.commit()
             return batch.sku
         raise errors.InvalidSku(f"Invalid sku {sku}")
