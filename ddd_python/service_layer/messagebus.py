@@ -1,21 +1,25 @@
 from typing import Callable, Dict, List, Type
 
+from ddd_python.adapters.email import AbstractEmailAdapter
 from ddd_python.domain import events
 
 
-def handle(event: events.Event):
-    for handler in HANDLERS[type(event)]:
-        handler(event)
+class MessageBus:
+    email: AbstractEmailAdapter
 
+    def __init__(self, email: AbstractEmailAdapter):
+        self.email = email
 
-def send_out_of_stock_notification(event: events.OutOfStock):
-    # email.send_mail(
-    #     "stock@made.com",
-    #     f"Out of stock for {event.sku}",
-    # )
-    return "Email Sent"
+        self.HANDLERS: Dict[Type[events.Event], List[Callable]] = {
+            events.OutOfStock: [self.send_out_of_stock_notification],
+        }
 
+    def handle(self, event: events.Event):
+        for handler in self.HANDLERS[type(event)]:
+            handler(event)
 
-HANDLERS: Dict[Type[events.Event], List[Callable]] = {
-    events.OutOfStock: [send_out_of_stock_notification],
-}
+    def send_out_of_stock_notification(self, event: events.OutOfStock):
+        self.email.send_mail(
+            "stock@made.com",
+            f"Out of stock for {event.sku}",
+        )

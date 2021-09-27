@@ -6,11 +6,15 @@ from sqlalchemy.orm import sessionmaker
 from ddd_python import config
 from ddd_python.adapters import repository
 
-from . import messagebus
+from .messagebus import MessageBus
 
 
 class AbstractUnitOfWork(ABC):
     products: repository.AbstractProductRepository
+    messagebus: MessageBus
+
+    def __init__(self, messagebus: MessageBus):
+        self.messagebus = messagebus
 
     def __enter__(self):
         return self
@@ -30,7 +34,7 @@ class AbstractUnitOfWork(ABC):
         for product in self.products.seen:
             while product.events:
                 event = product.events.pop(0)
-                messagebus.handle(event)
+                self.messagebus.handle(event)
 
     def commit(self):
         self._commit()
@@ -38,7 +42,8 @@ class AbstractUnitOfWork(ABC):
 
 
 class FakeUnitOfWork(AbstractUnitOfWork):
-    def __init__(self):
+    def __init__(self, messagebus: MessageBus):
+        super().__init__(messagebus)
         self.products = repository.FakeProductRepository([])
         self.committed = False
 
@@ -55,7 +60,8 @@ DEFAULT_SESSION_FACTORY = sessionmaker(
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
-    def __init__(self, session_factory=DEFAULT_SESSION_FACTORY):
+    def __init__(self, messagebus: MessageBus, session_factory=DEFAULT_SESSION_FACTORY):
+        super().__init__(messagebus)
         self.session_factory = session_factory
 
     def __enter__(self):

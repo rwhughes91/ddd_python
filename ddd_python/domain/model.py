@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import List, Set
+from typing import List
 
 from . import events
 
@@ -29,15 +29,15 @@ class Batch:
     reference: str
     sku: str
     eta: date
+    allocations: List[OrderLine]
     _purchased_quantity: int
-    _allocations: Set[OrderLine]
 
     def __init__(self, ref: str, sku: str, qty: int, eta: date) -> None:
         self.reference = ref
         self.sku = sku
         self.eta = eta
         self._purchased_quantity = qty
-        self._allocations = set()  # type Set[Orderline]
+        self.allocations = []
 
     def __eq__(self, other):
         if not isinstance(other, Batch):
@@ -61,13 +61,9 @@ class Batch:
             return False
         return self.eta < other.eta
 
-    @property
-    def order_allocations(self) -> List[OrderLine]:
-        return [*self._allocations]
-
     @property  # no setter means any setting will raise Exception
     def allocated_quantity(self) -> int:
-        return sum(line.qty for line in self._allocations)
+        return sum(line.qty for line in self.allocations)
 
     @property
     def available_quantity(self) -> int:
@@ -75,20 +71,32 @@ class Batch:
 
     @property
     def has_allocations(self) -> bool:
-        if len(self.order_allocations):
+        if len(self.allocations):
             return True
         return False
+
+    def add_allocation(self, line: OrderLine):
+        allocations = set(self.allocations)
+        allocations.add(line)
+
+        self.allocations = list(allocations)
+
+    def remove_allocation(self, line: OrderLine):
+        allocations = set(self.allocations)
+        allocations.remove(line)
+
+        self.allocations = list(allocations)
 
     def can_allocate(self, line: OrderLine) -> bool:
         return self.sku == line.sku and self.available_quantity >= line.qty
 
     def allocate(self, line: OrderLine) -> None:
         if self.can_allocate(line):
-            self._allocations.add(line)
+            self.add_allocation(line)
 
     def deallocate(self, line: OrderLine) -> None:
-        if line in self._allocations:
-            self._allocations.remove(line)
+        if line in self.allocations:
+            self.remove_allocation(line)
 
 
 # Aggregates
@@ -98,11 +106,15 @@ class Product:
     version_number: int
     events: List[events.Event]
 
+    def __new__(cls, *args, **kwargs):
+        instance = super(Product, cls).__new__(cls)
+        instance.events = []
+        return instance
+
     def __init__(self, sku: str, batches: List[Batch], version_number: int = 0):
         self.sku = sku
         self.batches = batches
         self.version_number = version_number
-        self.events = []
 
     def __eq__(self, other):
         if not isinstance(other, Product):
@@ -132,4 +144,5 @@ class Product:
             current_batches.add(batch)
         self.batches = list(current_batches)
         self.version_number += 1
+
         return [batch for batch in self.batches if not batch.has_allocations]
