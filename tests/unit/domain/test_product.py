@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from ddd_python.domain import model
+from ddd_python.domain import events, model
 
 # ALLOCATIONS
 
@@ -59,8 +59,9 @@ def test_raises_out_of_stock_exception_if_cannot_allocate():
     product = model.Product("SMALL-FORK", [batch])
     product.allocate(model.OrderLine("order1", "SMALL-FORK", 10))
 
-    with pytest.raises(model.OutOfStock, match="SMALL-FORK"):
-        product.allocate(model.OrderLine("order2", "SMALL-FORK", 1))
+    product.allocate(model.OrderLine("order2", "SMALL-FORK", 1))
+
+    assert product.events == [events.OutOfStock("SMALL-FORK")]
 
 
 def test_version_number_incremented_when_allocated():

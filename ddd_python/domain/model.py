@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import date
 from typing import List, Set
 
+from . import events
+
 
 class OutOfStock(Exception):
     pass
@@ -94,11 +96,13 @@ class Product:
     sku: str
     batches: List[Batch]
     version_number: int
+    events: List[events.Event]
 
     def __init__(self, sku: str, batches: List[Batch], version_number: int = 0):
         self.sku = sku
         self.batches = batches
         self.version_number = version_number
+        self.events = []
 
     def __eq__(self, other):
         if not isinstance(other, Product):
@@ -115,7 +119,7 @@ class Product:
             self.version_number += 1
             return batch.reference
         except StopIteration:
-            raise OutOfStock(f"Out of stock for sku {line.sku}")
+            self.events.append(events.OutOfStock(self.sku))
 
     def order_batches(self, batches: List[Batch]):
         today = date.today()

@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from ddd_python import config
 from ddd_python.adapters import repository
 
+from . import messagebus
+
 
 class AbstractUnitOfWork(ABC):
     products: repository.AbstractProductRepository
@@ -17,12 +19,22 @@ class AbstractUnitOfWork(ABC):
         self.rollback()
 
     @abstractmethod
-    def commit(self):
+    def rollback(self):
         raise NotImplementedError
 
     @abstractmethod
-    def rollback(self):
+    def _commit(self):
         raise NotImplementedError
+
+    def publish_events(self):
+        for product in self.products.seen:
+            while product.events:
+                event = product.events.pop(0)
+                messagebus.handle(event)
+
+    def commit(self):
+        self._commit()
+        self.publish_events()
 
 
 class FakeUnitOfWork(AbstractUnitOfWork):
@@ -30,7 +42,7 @@ class FakeUnitOfWork(AbstractUnitOfWork):
         self.products = repository.FakeProductRepository([])
         self.committed = False
 
-    def commit(self):
+    def _commit(self):
         self.committed = True
 
     def rollback(self):
@@ -53,7 +65,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
     def __exit__(self, *args):
         self.session.close()
 
-    def commit(self):
+    def _commit(self):
         self.session.commit()
 
     def rollback(self):
