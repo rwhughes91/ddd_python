@@ -30,7 +30,9 @@ def insert_batch(session):
 
 
 def insert_product(session):
-    session.execute('INSERT INTO products (sku) VALUES ("GENERIC-SOFA")')
+    session.execute(
+        'INSERT INTO products (sku, version_number) VALUES ("GENERIC-SOFA", 0)'
+    )
     [[product_id]] = session.execute(
         "SELECT id FROM products WHERE sku=:sku", {"sku": "GENERIC-SOFA"}
     )
@@ -62,10 +64,10 @@ def test_repository_can_get_a_product(session):
 
 def test_repository_can_get_products(session):
     session.execute(
-        "INSERT INTO products (sku)"
+        "INSERT INTO products (sku, version_number)"
         """VALUES
-        ("GENERIC-SOFA"),
-        ("GENERIC-SOFA-2")""",
+        ("GENERIC-SOFA", 0),
+        ("GENERIC-SOFA-2", 0)""",
     )
     repo = repository.SqlAlchemyProductRepository(session)
     products = repo.list()

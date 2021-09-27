@@ -22,7 +22,7 @@ def allocate(
         raise errors.InvalidSku(f"Invalid sku {sku}")
 
 
-def list_products(sku: str, uow: unit_of_work.AbstractUnitOfWork):
+def list_products(uow: unit_of_work.AbstractUnitOfWork):
     with uow:
         products = uow.products.list()
         return [{"sku": product.sku} for product in products]

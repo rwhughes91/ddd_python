@@ -7,13 +7,28 @@ from ddd_python.domain import model
 
 
 class AbstractProductRepository(ABC):
+    seen: Set[model.Product]
+
+    def __init__(self):
+        self.seen = set()
+
     @abstractmethod
-    def add(self, batch: model.Product):
+    def _add(self, product: model.Product):
         raise NotImplementedError
 
     @abstractmethod
-    def get(self, sku: str) -> model.Product:
+    def _get(self, sku: str) -> model.Product:
         raise NotImplementedError
+
+    def add(self, product: model.Product):
+        self._add(product)
+        self.seen.add(product)
+
+    def get(self, sku: str) -> model.Product:
+        product = self._get(sku)
+        if product:
+            self.seen.add(product)
+        return product
 
     @abstractmethod
     def list(self) -> List[model.Product]:
@@ -24,12 +39,13 @@ class FakeProductRepository(AbstractProductRepository):
     _products: Set[model.Product]
 
     def __init__(self, products: List[model.Product]):
+        super().__init__()
         self._products = set(products)
 
-    def add(self, product: model.Product):
+    def _add(self, product: model.Product):
         self._products.add(product)
 
-    def get(self, sku: str):
+    def _get(self, sku: str):
         return next(p for p in self._products if p.sku == sku)
 
     def list(self):
@@ -40,12 +56,13 @@ class SqlAlchemyProductRepository(AbstractProductRepository):
     session: Session
 
     def __init__(self, session: Session):
+        super().__init__()
         self.session = session
 
-    def add(self, product: model.Product) -> None:
+    def _add(self, product: model.Product) -> None:
         self.session.add(product)
 
-    def get(self, sku: str) -> model.Product:
+    def _get(self, sku: str) -> model.Product:
         return self.session.query(model.Product).filter_by(sku=sku).one()
 
     def list(self) -> List[model.Product]:

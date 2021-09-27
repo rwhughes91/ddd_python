@@ -1,4 +1,4 @@
-# Domain Modeling
+# Ch 1 Domain Modeling
 
 Notes
 
@@ -9,7 +9,7 @@ Takeaways
 
 1. **These models should have ZERO dependencies**
 
-# Repository Pattern
+# Ch 2 Repository Pattern
 
 Notes
 
@@ -21,7 +21,7 @@ Takeaways
 1. Different ORM packages around querying a database implement different APIs. In order to not depend on a specific ORM, we create an interface (a repository) around common db operations. We can then make our service layer depend on this interface and pass any defined repository you want
 2. This points to a main concept of DDD. you create interfaces/repositories of infrastructure services your app layer will need and pass it in as a dependency so your app is very easily extensible and decoupled from infrastructure concerns
 
-# Service Layer
+# Ch 3 Service Layer
 
 Takeaways
 
@@ -39,7 +39,7 @@ Takeaways
 
 1. Just freaking write tests, but testing too low breaks a lot of tests for every refactoring phase. Testing too far misses important details that are often overlooked / harder to write great test flows. We found focusing a lot on service layer to be the best, as it abstracts domain implementations but is close enough to still easily test all invariants/rules
 
-# Unit of Work
+# Ch 4 Unit of Work
 
 Notes
 
@@ -50,9 +50,9 @@ Notes
 Takeaways
 
 1. Creating an N number of Repositories (for each aggregate) for each type M is pretty annoying (M x N), especially since your service layer will need to depend on N interfaces (of the same interface! which feels weird). To combat this, lots of teams create one repository for all entities for each type (M). This is fine and totally up to your team; however, UOW pattern abstracts away the (N) amount of repositories, so up to you!
-2. We put our UOW inside the service layer folder, but you could very much argue that this is an adapter. it abstracts and works with a specific ORM implementation / repository implementation. However, functionally, UOW was made to make the service layer DRY
+2. We put our UOW inside the service layer folder, but you could very much argue that this is an adapter. it abstracts and works with a specific ORM implementation / repository implementation. However, functionally, UOW was made to make the service layer DRY.
 
-# Aggregates and Consistency Boundaries
+# Ch 5 Aggregates and Consistency Boundaries
 
 Invariants:
 
@@ -68,7 +68,7 @@ Problem
 3. We have not thought about how to maintain our invariants with concurrency (see below)
    2a. usually done with db locks / transaction isolation levels + versioning
 
-Other Notes
+Notes
 
 1. Often few entities work together and are separated from the rest of the domain model, it can become cumbersome orchestrating between them
 2. Domain service functions, while useful for orchestrating behavior, are often not sufficient in maintaining the state you need across these groups of entities (consistency boundaries)
@@ -90,3 +90,23 @@ Takeaways
 2. **You should almost always run your domain services on the most up to date system state**.
    2a. its up to your domain model if you want to lock all underlying entities connected to an aggregate, but you 99.99% of the time want to do so. we implemented such with versioning, but you could also change db isolation level to serialization
    2b. Serialization isolation level has a huge performance cost, we found setting tx isolation level to Repeatable Read, and implementing an auto update every time our aggregate was used achieved the same thing in a more scalable way
+
+# Ch 6 Event-Driven Architecture
+
+Problem
+
+1. When things don't work out, like an allocation can't happen, we throw an error. Often, you want to do some side effect when these errors occur (like send an email notifying someone that Product is out of stock). We know we don't want our domain model dependent on infrastructure concerns, so a natural place seems to be in the service layer. BUT, there is a dissatisfaction with putting the logic of sending an email in the service layer because this violates SRE (Single Responsibility Principle)
+2. Like we have done, we could depend on a repository / interface in the service layer and pass in the specific implementation when called (we could even have a lot of the email sending logic encapsulated inside this repository), but we will explore the benefits of **raising domain events**.
+3. Rasing domain events allows you to generate a list of events that have happened and its up to the application calling it to respond in any way it wants. We don't' really want to pass in too much email sending logic (like templates, etc) into the repository we are using because the repo is an infrastructure concern, and the logic of this side effect belongs in the app layer.
+   3a. Having a message bus and raising events via the domain model solves this problem. It also allows different instances of app layers (if you need that) to respond in different ways -- not super common to need more than 1 service layer
+   3b. This solution satisfies SRE -- think about the fact that event handlers can raise events themselves (if an error occurs or something), and this solution creates a robust cascade of reaction without bloating our service layer
+
+Solution
+
+1. we will implement a message bus, and attach it to our UOW. it'll take a list of all events that happened, iterate through them and call the appropriate event handler. Events will be dataclasses with the attributes each handler needs.
+2. At the end of the
+
+Takeaway
+
+1. You can still raise exceptions when input to the domain model is invalid or something, but you don't want to both raise an exception and raise a domain event. A general rule is that you raise exceptions if domain model is being used wrong, but you raise events when things happen during the invocation of a domain service
+2. This solution, albeit not something you see a lot, is very appealing. As our repo's grow and move to production its common to need to add a lot of edge case logic to specific endpoints or functions. Using an internal message bus allows you to define these edge cases in its own file, without bloating actual application logic
