@@ -5,16 +5,15 @@ from sqlalchemy.orm import sessionmaker
 
 from ddd_python import config
 from ddd_python.adapters import repository
-
-from .messagebus import MessageBus
+from ddd_python.adapters.email import AbstractEmailAdapter
 
 
 class AbstractUnitOfWork(ABC):
     products: repository.AbstractProductRepository
-    messagebus: MessageBus
+    email: AbstractEmailAdapter
 
-    def __init__(self, messagebus: MessageBus):
-        self.messagebus = messagebus
+    def __init__(self, email: AbstractEmailAdapter):
+        self.email = email
 
     def __enter__(self):
         return self
@@ -27,27 +26,25 @@ class AbstractUnitOfWork(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def _commit(self):
+    def commit(self):
         raise NotImplementedError
 
-    def publish_events(self):
+    def collect_new_events(self):
         for product in self.products.seen:
             while product.events:
-                event = product.events.pop(0)
-                self.messagebus.handle(event)
-
-    def commit(self):
-        self._commit()
-        self.publish_events()
+                # we return an iterator because much easier than returning an iterable
+                # all iterators are iterables
+                # not all iterables are iterators
+                yield product.events.pop(0)
 
 
 class FakeUnitOfWork(AbstractUnitOfWork):
-    def __init__(self, messagebus: MessageBus):
-        super().__init__(messagebus)
+    def __init__(self, email: AbstractEmailAdapter):
+        super().__init__(email)
         self.products = repository.FakeProductRepository([])
         self.committed = False
 
-    def _commit(self):
+    def commit(self):
         self.committed = True
 
     def rollback(self):
@@ -60,8 +57,10 @@ DEFAULT_SESSION_FACTORY = sessionmaker(
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
-    def __init__(self, messagebus: MessageBus, session_factory=DEFAULT_SESSION_FACTORY):
-        super().__init__(messagebus)
+    def __init__(
+        self, email: AbstractEmailAdapter, session_factory=DEFAULT_SESSION_FACTORY
+    ):
+        super().__init__(email)
         self.session_factory = session_factory
 
     def __enter__(self):
@@ -71,7 +70,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
     def __exit__(self, *args):
         self.session.close()
 
-    def _commit(self):
+    def commit(self):
         self.session.commit()
 
     def rollback(self):
