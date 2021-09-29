@@ -123,3 +123,8 @@ Solution
 1. This means we are going to turn EVERYTHING to event handlers! Every app service starts by setting up a queue, instantiated with a particular event, and as these domain services run, they will add events to this queue!
    1a. This also re-highlights the benefits of this event-driven architecture, whenever we need to re-apply business logic to a state change in our system, we can raise an event, rather than bloating an app service with another domain service invocation!
 2. This solution also removes all of the side effect logic from the MessageBus, like sending an email, and puts it with all of the other app service logic. We will rename this file from services to handlers.py.
+
+Notes
+
+1. This implementation is interesting, but there are improvements that can be made. First, returning an array of results and popping the 0 index is a solution that can be greatly improved upon. Secondly, all of our events are past-tense, despite them having not yet happened.
+2. It also doesn't feel quite right that our events, which kick off our domain services, are in the models/events file. Our app layer is what is orchestrating which event to which handler, so beginning events don't necessarily feel like they belong here.

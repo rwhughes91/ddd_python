@@ -55,21 +55,14 @@ def add_batch(event: events.BatchCreated, uow: unit_of_work.AbstractUnitOfWork) 
         raise errors.InvalidSku(f"Invalid sku {event.sku}")
 
 
-def edit_batch(event: events.BatchEdited, uow: unit_of_work.AbstractUnitOfWork) -> str:
+def change_batch_quantity(
+    event: events.BatchQuantityChanged,
+    uow: unit_of_work.AbstractUnitOfWork,
+):
     with uow:
-        product = uow.products.get(event.sku)
-        if product:
-            batch = None
-            for b in product.batches:
-                if event.ref == b.reference:
-                    batch = b
-                    break
-            if batch:
-                batch.eta = event.eta
-                uow.commit()
-                return batch.reference
-            raise errors.InvalidBatchRef(f"Invalid batch ref {event.ref}")
-        raise errors.InvalidSku(f"Invalid sku {event.sku}")
+        product = uow.products.get_by_batchref(batchref=event.ref)
+        product.change_batch_quantity(ref=event.ref, qty=event.qty)
+        uow.commit()
 
 
 def send_out_of_stock_notification(

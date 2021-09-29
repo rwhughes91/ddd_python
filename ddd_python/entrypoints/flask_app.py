@@ -67,9 +67,7 @@ def add_batch():
 @app.route("/batches", methods=["PUT"])
 def edit_batch():
     results = messagebus.handle(
-        events.BatchEdited(
-            request.json.get("sku"), request.json.get("ref"), request.json.get("eta")
-        ),
+        events.BatchQuantityChanged(request.json.get("ref"), request.json.get("qty")),
         uow,
     )
     batchref = results.pop(0)

@@ -37,8 +37,9 @@ class BatchCreated(Event):
 
 
 @dataclass
-class BatchEdited(BatchCreated):
-    pass
+class BatchQuantityChanged(Event):
+    ref: str
+    qty: int
 
 
 @dataclass

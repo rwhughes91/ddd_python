@@ -24,6 +24,6 @@ HANDLERS: Dict[Type[events.Event], List[Callable]] = {
     events.ProductCreated: [handlers.add_product],
     events.BatchesRequired: [handlers.list_batches],
     events.BatchCreated: [handlers.add_batch],
-    events.BatchEdited: [handlers.edit_batch],
+    events.BatchQuantityChanged: [handlers.change_batch_quantity],
     events.OutOfStock: [handlers.send_out_of_stock_notification],
 }
