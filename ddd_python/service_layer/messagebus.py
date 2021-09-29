@@ -1,25 +1,29 @@
 from typing import Callable, Dict, List, Type
 
-from ddd_python.adapters.email import AbstractEmailAdapter
 from ddd_python.domain import events
 
+from . import handlers, unit_of_work
 
-class MessageBus:
-    email: AbstractEmailAdapter
 
-    def __init__(self, email: AbstractEmailAdapter):
-        self.email = email
+def handle(event: events.Event, uow: unit_of_work.AbstractUnitOfWork):
+    results = []
+    queue = [event]
+    while queue:
+        event = queue.pop(0)
+        for handler in HANDLERS[type(event)]:
+            results.append(handler(event, uow=uow))
+            # uow.collect_new_events returns an iterator/generator
+            # iterators are also iterables
+            queue.extend(uow.collect_new_events())
+    return results
 
-        self.HANDLERS: Dict[Type[events.Event], List[Callable]] = {
-            events.OutOfStock: [self.send_out_of_stock_notification],
-        }
 
-    def handle(self, event: events.Event):
-        for handler in self.HANDLERS[type(event)]:
-            handler(event)
-
-    def send_out_of_stock_notification(self, event: events.OutOfStock):
-        self.email.send_mail(
-            "stock@made.com",
-            f"Out of stock for {event.sku}",
-        )
+HANDLERS: Dict[Type[events.Event], List[Callable]] = {
+    events.AllocationRequired: [handlers.allocate],
+    events.ProductsRequired: [handlers.list_products],
+    events.ProductCreated: [handlers.add_product],
+    events.BatchesRequired: [handlers.list_batches],
+    events.BatchCreated: [handlers.add_batch],
+    events.BatchEdited: [handlers.edit_batch],
+    events.OutOfStock: [handlers.send_out_of_stock_notification],
+}

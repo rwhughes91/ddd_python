@@ -110,3 +110,16 @@ Takeaway
 
 1. You can still raise exceptions when input to the domain model is invalid or something, but you don't want to both raise an exception and raise a domain event. A general rule is that you raise exceptions if domain model is being used wrong, but you raise events when things happen during the invocation of a domain service
 2. This solution, albeit not something you see a lot, is very appealing. As our repo's grow and move to production its common to need to add a lot of edge case logic to specific endpoints or functions. Using an internal message bus allows you to define these edge cases in its own file, without bloating actual application logic
+3. Our current implementation of MessageBus, where it holds all side effect logic, also doesn't feel quite right. Its in the app layer, but it feels weird because app logic should be in the services file. In the next chapter we will fix this.
+
+# Ch 7 Making our App an Event Bus
+
+Problem
+
+1. We saw the benefits and scalability of raising domain events, and because of how strong it is, we are going to take it a step further. What if, instead of some infra-based side effect, what if on an event we needed to run some domain service again. For instance, on editing a batch a qty, we may need to deallocate order lines and re apply allocate for that order line (if batch qty is now less than order line qty)
+
+Solution
+
+1. This means we are going to turn EVERYTHING to event handlers! Every app service starts by setting up a queue, instantiated with a particular event, and as these domain services run, they will add events to this queue!
+   1a. This also re-highlights the benefits of this event-driven architecture, whenever we need to re-apply business logic to a state change in our system, we can raise an event, rather than bloating an app service with another domain service invocation!
+2. This solution also removes all of the side effect logic from the MessageBus, like sending an email, and puts it with all of the other app service logic. We will rename this file from services to handlers.py.

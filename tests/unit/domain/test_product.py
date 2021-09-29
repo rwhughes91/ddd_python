@@ -82,7 +82,7 @@ def test_batches_are_added():
 
     assert product.batches == []
 
-    product.order_batches([batch])
+    product.add_batches([batch])
 
     assert product.batches == [batch]
 
@@ -94,7 +94,7 @@ def test_raises_invalid_eta_exception_if_batch_eta_in_past():
     )
 
     with pytest.raises(model.InvalidETA):
-        product.order_batches([batch])
+        product.add_batches([batch])
 
 
 def test_duplicate_batches_are_ignored():
@@ -103,7 +103,7 @@ def test_duplicate_batches_are_ignored():
 
     assert product.batches == [batch]
 
-    product.order_batches([batch])
+    product.add_batches([batch])
 
     assert product.batches == [batch]
 
@@ -113,7 +113,7 @@ def test_raises_invalid_sku_exception_if_batch_sku_does_not_match_product_sku():
     batch = model.Batch("batch1", "SMALL-FORKY-SILVER", 10, eta=date.today())
 
     with pytest.raises(model.InvalidSku, match="SMALL-FORK"):
-        product.order_batches([batch])
+        product.add_batches([batch])
 
 
 def test_version_number_incremented_when_bathes_ordered():
@@ -121,5 +121,5 @@ def test_version_number_incremented_when_bathes_ordered():
     assert product.version_number == 0
 
     batch = model.Batch("batch1", "SMALL-FORK", 10, eta=date.today())
-    product.order_batches([batch])
+    product.add_batches([batch])
     assert product.version_number == 1

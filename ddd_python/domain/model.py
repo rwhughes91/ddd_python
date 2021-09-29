@@ -5,10 +5,6 @@ from typing import List
 from . import events
 
 
-class OutOfStock(Exception):
-    pass
-
-
 class InvalidETA(Exception):
     pass
 
@@ -133,7 +129,7 @@ class Product:
         except StopIteration:
             self.events.append(events.OutOfStock(self.sku))
 
-    def order_batches(self, batches: List[Batch]):
+    def add_batches(self, batches: List[Batch]):
         today = date.today()
         current_batches = set(self.batches)
         for batch in batches:
