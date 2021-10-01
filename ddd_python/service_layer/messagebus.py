@@ -1,5 +1,7 @@
 from typing import Callable, Dict, List, Type, Union
 
+from retry import retry
+
 from ddd_python.domain import commands, events
 
 from . import handlers, unit_of_work
@@ -20,8 +22,13 @@ class AbstractMessageBus:
     def _handle_event(self, event: events.Event):
         for handler in self.EVENT_HANDLERS[type(event)]:
             try:
-                handler(event, uow=self.uow)
-                self.queue.extend(self.uow.collect_new_events())
+
+                @retry(tries=3, delay=2, backoff=1)
+                def run():
+                    handler(event, uow=self.uow)
+                    self.queue.extend(self.uow.collect_new_events())
+
+                run()
             except Exception:
                 continue
 

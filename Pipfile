@@ -8,6 +8,7 @@ sqlalchemy = "*"
 python-dotenv = "*"
 psycopg2 = "*"
 flask = "*"
+tenacity = "*"
 
 [dev-packages]
 pytest = "*"
@@ -22,6 +23,7 @@ pre-commit = "*"
 black = "*"
 coverage = "*"
 alembic = "*"
+types-retry = "*"
 
 [requires]
 python_version = "3.9"
