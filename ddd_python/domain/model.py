@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import List
+from typing import List, Union
 
-from . import events
+from . import commands, events
+
+Events = List[Union[commands.Command, events.Event]]
 
 
 class InvalidETA(Exception):
@@ -103,7 +105,7 @@ class Product:
     sku: str
     batches: List[Batch]
     version_number: int
-    events: List[events.Event]
+    events: Events
 
     def __new__(cls, *args, **kwargs):
         instance = super(Product, cls).__new__(cls)
@@ -150,6 +152,4 @@ class Product:
         batch._purchased_quantity = qty
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
-            self.events.append(
-                events.AllocationRequired(line.orderid, line.sku, line.qty)
-            )
+            self.events.append(commands.Allocate(line.orderid, line.sku, line.qty))
