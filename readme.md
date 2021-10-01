@@ -128,3 +128,14 @@ Notes
 1. This implementation is interesting, but there are improvements that can be made. First, returning an array of results and popping the 0 index is a solution that can be greatly improved upon. Secondly, all of our events are past-tense, despite them having not yet happened.
 2. It also doesn't feel quite right that our events, which kick off our domain services, are in the models/events file. Our app layer is what is orchestrating which event goes to which handler, so beginning events don't necessarily feel like they belong here but are made up for the app to flow. TLDR, these aren't really domain events, but its not the end of the world if they are in here.
 3. A current limitation of our solution is that it ONLY pulls events from seen aggregates. BUT, what if an infra side effect, like sending an email (which occurs outside the scope of domain services) needs to raise an event? Maybe retry something or respond to some particular failure
+
+# Ch 8 Command and Command Handlers
+
+Problem
+
+1. See last section of ch 7
+
+Solution
+
+1. We are going to divide a line between command - things that kick off domain services and events - things that happened when things are running (domain or side effects). We will have our message bus treat these differently as well. Data returned or errors raised from commands will be captured and returned back to whatever invoked it.
+2. Some differences: Commands will be imperative, fail noisily, and sent to recipient. Events will be past tense, fail independently, and will be broadcasted to all listeners

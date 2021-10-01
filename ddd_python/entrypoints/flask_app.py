@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import Flask, request
 
 from ddd_python.adapters import email, orm
-from ddd_python.domain import events
+from ddd_python.domain import commands
 from ddd_python.service_layer import unit_of_work
 from ddd_python.service_layer.messagebus import MessageBus
 
@@ -16,7 +16,7 @@ def allocate_endpoint():
     uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
     messagebus = MessageBus(uow)
     results = messagebus.handle(
-        events.AllocationRequired(
+        commands.Allocate(
             request.json.get("orderid"),
             request.json.get("sku"),
             request.json.get("qty"),
@@ -30,7 +30,7 @@ def allocate_endpoint():
 def list_products():
     uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
     messagebus = MessageBus(uow)
-    results = messagebus.handle(events.ProductsRequired())
+    results = messagebus.handle(commands.GetProducts())
     products = results.pop(0)
     return {"products": products}, 200
 
@@ -39,7 +39,7 @@ def list_products():
 def add_products():
     uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
     messagebus = MessageBus(uow)
-    results = messagebus.handle(events.ProductCreated(request.json.get("sku")))
+    results = messagebus.handle(commands.CreateProduct(request.json.get("sku")))
     productref = results.pop(0)
     return {"productref": productref}, 201
 
@@ -48,7 +48,7 @@ def add_products():
 def list_batches(sku):
     uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
     messagebus = MessageBus(uow)
-    results = messagebus.handle(events.BatchesRequired(sku))
+    results = messagebus.handle(commands.GetBatches(sku))
     batches = results.pop(0)
     return {"batches": batches}, 200
 
@@ -59,7 +59,7 @@ def add_batch():
     messagebus = MessageBus(uow)
     date = datetime.strptime(request.json.get("eta"), "%m/%d/%Y").date()
     results = messagebus.handle(
-        events.BatchCreated(
+        commands.CreateBatch(
             request.json.get("ref"),
             request.json.get("sku"),
             request.json.get("qty"),
@@ -76,7 +76,7 @@ def edit_batch():
     uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
     messagebus = MessageBus(uow)
     results = messagebus.handle(
-        events.BatchQuantityChanged(request.json.get("ref"), request.json.get("qty"))
+        commands.ChangeBatchQuantity(request.json.get("ref"), request.json.get("qty"))
     )
     batchref = results.pop(0)
     return {"batchref": batchref}, 200
