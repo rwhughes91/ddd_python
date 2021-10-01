@@ -104,7 +104,6 @@ Problem
 Solution
 
 1. we will implement a message bus, and attach it to our UOW. it'll take a list of all events that happened, iterate through them and call the appropriate event handler. Events will be dataclasses with the attributes each handler needs.
-2. At the end of the
 
 Takeaway
 
@@ -127,4 +126,5 @@ Solution
 Notes
 
 1. This implementation is interesting, but there are improvements that can be made. First, returning an array of results and popping the 0 index is a solution that can be greatly improved upon. Secondly, all of our events are past-tense, despite them having not yet happened.
-2. It also doesn't feel quite right that our events, which kick off our domain services, are in the models/events file. Our app layer is what is orchestrating which event to which handler, so beginning events don't necessarily feel like they belong here.
+2. It also doesn't feel quite right that our events, which kick off our domain services, are in the models/events file. Our app layer is what is orchestrating which event goes to which handler, so beginning events don't necessarily feel like they belong here but are made up for the app to flow. TLDR, these aren't really domain events, but its not the end of the world if they are in here.
+3. A current limitation of our solution is that it ONLY pulls events from seen aggregates. BUT, what if an infra side effect, like sending an email (which occurs outside the scope of domain services) needs to raise an event? Maybe retry something or respond to some particular failure
