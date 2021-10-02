@@ -155,3 +155,7 @@ Notes
 2. We could add a queue on the UOW, and we can grab the raised events attached to that UOW and add them to the messagebus queue
 3. We could also pass the messagebus instance to the handlers and extend the queue in the handler ourselves (or pass a fn that adds to the queue)
    3a. typing is an issue here because of circular dependencies
+
+Solution
+
+1. We went with #3, it felt the cleanest
