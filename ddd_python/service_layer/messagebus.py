@@ -25,7 +25,7 @@ class AbstractMessageBus:
 
                 @retry(tries=3, delay=2, backoff=1)
                 def run():
-                    handler(event, uow=self.uow)
+                    handler(event, uow=self.uow, queue=self.queue)
                     self.queue.extend(self.uow.collect_new_events())
 
                 run()
@@ -90,5 +90,6 @@ class FakeMessageBus(AbstractMessageBus):
     def __init__(self):
         super().__init__()
         self.events_published = []
+        self.commands_published = []
         self.EVENT_HANDLERS = EventHandler
         self.COMMAND_HANDLERS = CommandHandler

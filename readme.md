@@ -139,3 +139,19 @@ Solution
 
 1. We are going to divide a line between command - things that kick off domain services and events - things that happened when things are running (domain or side effects). We will have our message bus treat these differently as well. Data returned or errors raised from commands will be captured and returned back to whatever invoked it.
 2. Some differences: Commands will be imperative, fail noisily, and sent to recipient. Events will be past tense, fail independently, and will be broadcasted to all listeners
+
+Notes
+
+1. You may wonder if we should add retry logic to commands. The answer is: for part of the command you can. You don't want to retry commands that have bad inputs or commands where there are obvious errors that could raise on our side, but you can add retry logic around DB requests, etc.
+2. This solution still does not allow side effect handlers, outside the scope of an aggregate, from adding events to the queue. Retry logic takes away the case of a failing side effect needing to add its own event to the queue, but we are still missing the case when a side effect needs to raise another event.
+
+# Ch 8b Allowing Handlers to add Events to Queue
+
+Notes
+
+1. Now we could implement this in a few ways, but a couple that pop out are A: event handlers return events that needed to be added to queues, or handler raise events that need to be added to the queue.
+   1a. The latter could be difficult since we added retry logic (so if we went this way we would need to remove retry and add failed handler back to queue for retires). The first one is interesting....our commands return responses and our entry points to our domain model, so they will ALWAYS raise events in the context of an aggregate.
+   1b. Back to the later...if you go the raising route make sure to not create infinite loops of side effects (if a service is down or something)
+2. We could add a queue on the UOW, and we can grab the raised events attached to that UOW and add them to the messagebus queue
+3. We could also pass the messagebus instance to the handlers and extend the queue in the handler ourselves (or pass a fn that adds to the queue)
+   3a. typing is an issue here because of circular dependencies
