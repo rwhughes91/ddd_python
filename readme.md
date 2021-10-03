@@ -159,3 +159,15 @@ Notes
 Solution
 
 1. We went with #3, it felt the cleanest
+
+# Ch 9 Event-Driven Architecture with Other Services
+
+Notes
+
+1. One of the coolest parts of this event bus we have is that it can be triggered via CLI, HTTP, from a message broker, or whatever **without any additional mapping**
+2. This architecture also makes it very natural to raise events by our service, so other services can react to it!
+3. This chapter will be about publishing external events, and setting up a new transport as a message broker consumer
+
+Problem
+
+1. We are lacking a central file to keep track of external events we consume and publish to. For large services with hundreds of events this can really help.

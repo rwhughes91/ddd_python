@@ -8,3 +8,8 @@ services:
       POSTGRES_USER: postgres
     ports:
       - 6432:5432
+  redis:
+    image: redis:6.2
+    restart: always
+    ports:
+      - 6380:6379

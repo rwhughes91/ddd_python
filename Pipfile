@@ -9,6 +9,7 @@ python-dotenv = "*"
 psycopg2 = "*"
 flask = "*"
 tenacity = "*"
+redis = "*"
 
 [dev-packages]
 pytest = "*"
@@ -24,6 +25,7 @@ black = "*"
 coverage = "*"
 alembic = "*"
 types-retry = "*"
+types-redis = "*"
 
 [requires]
 python_version = "3.9"
