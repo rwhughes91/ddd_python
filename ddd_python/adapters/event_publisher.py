@@ -14,8 +14,14 @@ class AbstractPublisherAdapter(ABC):
 
 
 class FakePublisherAdapter(AbstractPublisherAdapter):
+    def __init__(self):
+        self.published_events = {}
+
     def publish(self, channel: str, event: events.Event):
-        raise NotImplementedError
+        if channel in self.published_events:
+            self.published_events[channel].append(event)
+        else:
+            self.published_events[channel] = [event]
 
 
 class RedisPublisherAdapter(AbstractPublisherAdapter):

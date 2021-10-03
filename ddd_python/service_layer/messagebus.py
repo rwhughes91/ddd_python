@@ -69,6 +69,7 @@ class MessageBus(AbstractMessageBus):
         commands.Allocate: handlers.allocate,
     }
     EVENT_HANDLERS: Dict[Type[events.Event], List[Callable]] = {
+        events.Allocated: [handlers.publish_allocated_event],
         events.OutOfStock: [handlers.send_out_of_stock_notification],
     }
 

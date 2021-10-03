@@ -4,7 +4,7 @@ from typing import Callable, Dict, Optional
 
 from redis import Redis
 
-from ddd_python.adapters import email, orm
+from ddd_python.adapters import email, event_publisher, orm
 from ddd_python.config import redis_host, redis_port
 from ddd_python.domain import commands
 from ddd_python.service_layer import unit_of_work
@@ -25,7 +25,12 @@ class RedisMessage:
 
 
 def allocate_endpoint(message: RedisMessage):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
+    uow = unit_of_work.SqlAlchemyUnitOfWork(
+        email.FakeEmailAdapter(),
+        event_publisher=event_publisher.RedisPublisherAdapter(
+            host=redis_host, port=redis_port
+        ),
+    )
     messagebus = MessageBus(uow)
     messagebus.handle(
         commands.Allocate(
@@ -37,25 +42,45 @@ def allocate_endpoint(message: RedisMessage):
 
 
 def list_products(message: RedisMessage):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
+    uow = unit_of_work.SqlAlchemyUnitOfWork(
+        email.FakeEmailAdapter(),
+        event_publisher=event_publisher.RedisPublisherAdapter(
+            host=redis_host, port=redis_port
+        ),
+    )
     messagebus = MessageBus(uow)
     messagebus.handle(commands.GetProducts())
 
 
 def add_products(message: RedisMessage):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
+    uow = unit_of_work.SqlAlchemyUnitOfWork(
+        email.FakeEmailAdapter(),
+        event_publisher=event_publisher.RedisPublisherAdapter(
+            host=redis_host, port=redis_port
+        ),
+    )
     messagebus = MessageBus(uow)
     messagebus.handle(commands.CreateProduct(message.data.get("sku", "")))
 
 
 def list_batches(message: RedisMessage):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
+    uow = unit_of_work.SqlAlchemyUnitOfWork(
+        email.FakeEmailAdapter(),
+        event_publisher=event_publisher.RedisPublisherAdapter(
+            host=redis_host, port=redis_port
+        ),
+    )
     messagebus = MessageBus(uow)
     messagebus.handle(commands.GetBatches(message.data.get("sku", "")))
 
 
 def add_batch(message: RedisMessage):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
+    uow = unit_of_work.SqlAlchemyUnitOfWork(
+        email.FakeEmailAdapter(),
+        event_publisher=event_publisher.RedisPublisherAdapter(
+            host=redis_host, port=redis_port
+        ),
+    )
     messagebus = MessageBus(uow)
     date = datetime.strptime(message.data.get("eta", ""), "%m/%d/%Y").date()
     messagebus.handle(
@@ -69,7 +94,12 @@ def add_batch(message: RedisMessage):
 
 
 def edit_batch(message: RedisMessage):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(email.FakeEmailAdapter())
+    uow = unit_of_work.SqlAlchemyUnitOfWork(
+        email.FakeEmailAdapter(),
+        event_publisher=event_publisher.RedisPublisherAdapter(
+            host=redis_host, port=redis_port
+        ),
+    )
     messagebus = MessageBus(uow)
     messagebus.handle(
         commands.ChangeBatchQuantity(

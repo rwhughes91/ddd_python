@@ -6,14 +6,19 @@ from sqlalchemy.orm import sessionmaker
 from ddd_python import config
 from ddd_python.adapters import repository
 from ddd_python.adapters.email import AbstractEmailAdapter
+from ddd_python.adapters.event_publisher import AbstractPublisherAdapter
 
 
 class AbstractUnitOfWork(ABC):
     products: repository.AbstractProductRepository
     email: AbstractEmailAdapter
+    event_publisher: AbstractPublisherAdapter
 
-    def __init__(self, email: AbstractEmailAdapter):
+    def __init__(
+        self, email: AbstractEmailAdapter, event_publisher: AbstractPublisherAdapter
+    ):
         self.email = email
+        self.event_publisher = event_publisher
 
     def __enter__(self):
         return self
@@ -39,8 +44,10 @@ class AbstractUnitOfWork(ABC):
 
 
 class FakeUnitOfWork(AbstractUnitOfWork):
-    def __init__(self, email: AbstractEmailAdapter):
-        super().__init__(email)
+    def __init__(
+        self, email: AbstractEmailAdapter, event_publisher: AbstractPublisherAdapter
+    ):
+        super().__init__(email, event_publisher)
         self.products = repository.FakeProductRepository([])
         self.committed = False
 
@@ -58,9 +65,12 @@ DEFAULT_SESSION_FACTORY = sessionmaker(
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
     def __init__(
-        self, email: AbstractEmailAdapter, session_factory=DEFAULT_SESSION_FACTORY
+        self,
+        email: AbstractEmailAdapter,
+        event_publisher: AbstractPublisherAdapter,
+        session_factory=DEFAULT_SESSION_FACTORY,
     ):
-        super().__init__(email)
+        super().__init__(email, event_publisher)
         self.session_factory = session_factory
 
     def __enter__(self):

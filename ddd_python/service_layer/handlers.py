@@ -7,6 +7,8 @@ from . import errors, unit_of_work
 Message = Union[commands.Command, events.Event]
 Messages = List[Message]
 
+# COMMANDS
+
 
 def allocate(
     command: commands.Allocate,
@@ -78,6 +80,9 @@ def change_batch_quantity(
         uow.commit()
 
 
+# EVENTS
+
+
 def send_out_of_stock_notification(
     event: events.OutOfStock,
     uow: unit_of_work.AbstractUnitOfWork,
@@ -87,3 +92,11 @@ def send_out_of_stock_notification(
         "stock@made.com",
         f"Out of stock for {event.sku}",
     )
+
+
+def publish_allocated_event(
+    event: events.Allocated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    uow.event_publisher.publish("line_allocated", event)
