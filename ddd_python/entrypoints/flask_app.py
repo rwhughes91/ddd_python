@@ -7,7 +7,6 @@ from ddd_python.domain import commands
 from ddd_python.service_layer import unit_of_work
 from ddd_python.service_layer.messagebus import MessageBus
 
-orm.start_mappers()
 app = Flask(__name__)
 
 
@@ -83,4 +82,5 @@ def edit_batch():
 
 
 if __name__ == "__main__":
+    orm.start_mappers()
     app.run(port=5000)
