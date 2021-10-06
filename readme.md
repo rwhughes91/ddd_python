@@ -210,7 +210,8 @@ Notes
    4a. Its not very efficient to use our repositories. For one, our repositories point to aggregates and we may want to view grab random data by certain conditions, sorted in specific ways, with different types of joins. If we used our repository, it would be much slower than it needs to be. In fact, writing raw sql to sqlalchemy would be the most efficient way to do this.
    4b. Secondly, our reads do not need our domain models, so we dont want our ORM to map the results to these objects. Again, raw sql prevents this.
    4c. ORMs can also lead to n+1 problems (not often), but raw sql again solves this issue. As weird as it sounds, we are going to write our views with raw sql!
-5. Another common feature in CQRS (even when done in the same service) is to have a **denormalized data source**, which makes reading even faster (no joins), and greatly simplifies our sql queries
+5. Another common feature in CQRS (even when done in the same service) is to have a **denormalized data source**, which makes reading even faster (no joins -- like WAY faster -- faster than even the most perfect indexes provide), and greatly simplifies our sql queries
+6. Lastly, we need a way to update this read table.
 
 # Outstanding Problems
 

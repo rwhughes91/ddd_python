@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Dict, List
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -34,6 +35,10 @@ class AbstractUnitOfWork(ABC):
     def commit(self):
         raise NotImplementedError
 
+    @abstractmethod
+    def execute(self, query: str, payload: Dict[str, str]):
+        raise NotImplementedError
+
     def collect_new_events(self):
         for product in self.products.seen:
             while product.events:
@@ -44,18 +49,24 @@ class AbstractUnitOfWork(ABC):
 
 
 class FakeUnitOfWork(AbstractUnitOfWork):
+    queries: List[str]
+
     def __init__(
         self, email: AbstractEmailAdapter, event_publisher: AbstractPublisherAdapter
     ):
         super().__init__(email, event_publisher)
         self.products = repository.FakeProductRepository([])
         self.committed = False
+        self.queries = []
 
     def commit(self):
         self.committed = True
 
     def rollback(self):
         pass
+
+    def execute(self, query: str, payload: Dict[str, str]):
+        self.queries.append(query)
 
 
 DEFAULT_SESSION_FACTORY = sessionmaker(
@@ -85,3 +96,6 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
     def rollback(self):
         self.session.rollback()
+
+    def execute(self, query: str, payload: Dict[str, str]):
+        return self.session.execute(query)

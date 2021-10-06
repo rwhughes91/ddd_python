@@ -142,6 +142,9 @@ class Product:
         except StopIteration:
             self.events.append(events.OutOfStock(self.sku))
 
+    def deallocate(self, line: OrderLine):
+        pass
+
     def add_batches(self, batches: List[Batch]):
         today = date.today()
         current_batches = set(self.batches)
