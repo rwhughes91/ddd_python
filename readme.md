@@ -90,6 +90,8 @@ Takeaways
 2. **You should almost always run your domain services on the most up to date system state**.
    2a. its up to your domain model if you want to lock all underlying entities connected to an aggregate, but you 99.99% of the time want to do so. we implemented such with versioning, but you could also change db isolation level to serialization
    2b. Serialization isolation level has a huge performance cost, we found setting tx isolation level to Repeatable Read, and implementing an auto update every time our aggregate was used achieved the same thing in a more scalable way
+   2c. if the domain service is in no way connected to an invariant then you DO NOT need increment aggregate version number. In other words, the locking is really to guarantee a consistency boundary, if you are just updating an attribute, and there are no constraints or invariants around it, then you don't need to lock the underlying rows. This would improve the efficiency of our system.
+   2d. With all of this said, if you don't know (and its often hard to tell), increment the version to be safe -- e.g., all of our Product methods increment version numbers
 
 # Ch 6 Event-Driven Architecture
 
@@ -171,3 +173,46 @@ Notes
 Problem
 
 1. We are lacking a central file to keep track of external events we consume and publish to. For large services with hundreds of events this can really help.
+2. We have no retry logic in our app services/handlers when concurrent transactions fail from serialization errors
+
+Takeaway
+
+1. When designing microservices, and deciding how to split up your system, make sure to not split you system up by nouns, but to **split up your system by verbs**
+2. Communication between these services should be done with some message broker/event bus.
+3. **Event sourcing** is a collection/store of events that have happened, and its common to keep these so you can have a list of state changes and services that have failed can know where they failed (via sequential IDs) and apply these events to have eventual consistency.
+4. Microservices should only model things they care about. A Product model from service A may look different than service B and thats ideal. Microservices are also consistency boundaries just like Aggregates: they are responsible for making sure their variants are true at the time of committing
+
+Current State of Project
+
+1. So at this point we have a solid set up. We have an extremely testable architecture and our application depends on interfaces, not implementations (DIP). Additionally, we set up a UOW + Aggregates to have atomic operations with consistency boundaries. Lastly, we set up an event bus, to modularize everything into its own handler (SRP), which helps with refactoring and testing.
+2. The next 2 chapters are interesting and tbh not often seen. Next chapter will separate out our views (list batches) from our commands (allocate/write operations) to help with efficiency and the last chapter will incorporate dependency injection
+
+# Ch 10 Command-Query Responsibility Segregation (CQRS)
+
+Overview
+
+1. CQRS, often done across services (but can be done within a single service too), is an interesting idea but can add unnecessary complexity to a system. Typically when your system is using CRUD, and you don't need complex domain logic, this isn't necessary.
+   1a. Honestly, in super simple systems writing domain models is unnecessary too (though the benefits of passing dependencies down from transport to app + internal event bus are still great for the simplest systems).
+2. CQRS is the basic idea that reads (queries) and writes (commands) are different, so they should be treated differently (or have their responsibilities segregated, if you will)
+
+Notes
+
+1. Domain models are for commands/writes
+   1a. We’ve spent a lot of talking about how to build software that enforces the rules of our domain. These rules, or constraints, will be different for every application, and they make up the interesting core of our systems.
+   1b. To apply these rules properly, we needed to ensure that operations were consistent, and so we introduced patterns like Unit of Work and Aggregate that help us commit small chunks of work.
+   1c. To communicate changes between those small chunks, we introduced the Domain Events pattern so we can write rules like "When stock is damaged or lost, adjust the available quantity on the batch, and reallocate orders if necessary."
+2. All of this complexity exists so we can enforce rules when we change the state of our system. We’ve built a flexible set of tools for writing data. What about queries?
+   1a. Most people will not purchase our products :(; however, we will get a LOT of views to see our products. How can we make this more efficient? CQRS argues that you can cache views, sacrifice consistency for performance. Because our write operations will run off the current state of your system, its okay to show views that are slightly out of date.
+   2b. Example: let’s imagine that Bob and Harry both visit the page at the same time. Harry goes off to make coffee, and by the time he returns, Bob has already bought the last dresser. When Harry places his order, we send it to the allocation service, and because there’s not enough stock, we have to refund his payment or buy more stock and delay his delivery.
+   3c. This insight is key to understanding why reads can be safely inconsistent: we’ll always need to check the current state of our system when we come to allocate, because all distributed systems are inconsistent. **As soon as you have a web server and two customers, you have the potential for stale data.**
+3. Its always felt weird that we put list_batches and list_products as commands and in our handlers. Even if you decide not to go with CQRS, its a good idea to move views into their own spot of the system
+4. Implementing views is a bit different than one first expects
+   4a. Its not very efficient to use our repositories. For one, our repositories point to aggregates and we may want to view grab random data by certain conditions, sorted in specific ways, with different types of joins. If we used our repository, it would be much slower than it needs to be. In fact, writing raw sql to sqlalchemy would be the most efficient way to do this.
+   4b. Secondly, our reads do not need our domain models, so we dont want our ORM to map the results to these objects. Again, raw sql prevents this.
+   4c. ORMs can also lead to n+1 problems (not often), but raw sql again solves this issue. As weird as it sounds, we are going to write our views with raw sql!
+5. Another common feature in CQRS (even when done in the same service) is to have a **denormalized data source**, which makes reading even faster (no joins), and greatly simplifies our sql queries
+
+# Outstanding Problems
+
+1. retry logic for serialization errors that happen from concurrent transactions
+2. it would be very easy to forget to increment the version number of our Product aggregate
