@@ -40,3 +40,11 @@ class CreateProduct(Command):
 @dataclass
 class GetBatches(Command):
     sku: str
+
+
+@dataclass
+class Deallocate(Command):
+    ref: str
+    orderid: str
+    sku: str
+    qty: int

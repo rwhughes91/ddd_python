@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from datetime import date
+from typing import Dict, List, Optional, Union
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -8,6 +9,8 @@ from ddd_python import config
 from ddd_python.adapters import repository
 from ddd_python.adapters.email import AbstractEmailAdapter
 from ddd_python.adapters.event_publisher import AbstractPublisherAdapter
+
+Payload = Optional[Dict[str, Union[str, date]]]
 
 
 class AbstractUnitOfWork(ABC):
@@ -36,7 +39,7 @@ class AbstractUnitOfWork(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def execute(self, query: str, payload: Dict[str, str]):
+    def execute(self, query: str, payload: Payload = None):
         raise NotImplementedError
 
     def collect_new_events(self):
@@ -65,12 +68,14 @@ class FakeUnitOfWork(AbstractUnitOfWork):
     def rollback(self):
         pass
 
-    def execute(self, query: str, payload: Dict[str, str]):
+    def execute(self, query: str, payload: Payload = None):
         self.queries.append(query)
 
 
 DEFAULT_SESSION_FACTORY = sessionmaker(
-    bind=create_engine(config.postgres_uri, isolation_level="REPEATABLE READ")
+    bind=create_engine(
+        config.postgres_uri, isolation_level="REPEATABLE READ", echo=True
+    )
 )
 
 
@@ -97,5 +102,5 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
     def rollback(self):
         self.session.rollback()
 
-    def execute(self, query: str, payload: Dict[str, str]):
+    def execute(self, query: str, payload: Payload = None):
         return self.session.execute(query)

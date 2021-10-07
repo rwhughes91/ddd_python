@@ -61,12 +61,11 @@ class AbstractMessageBus:
 
 class MessageBus(AbstractMessageBus):
     COMMAND_HANDLERS: Dict[Type[commands.Command], Callable] = {
-        commands.GetProducts: handlers.list_products,
         commands.CreateProduct: handlers.add_product,
-        commands.GetBatches: handlers.list_batches,
         commands.CreateBatch: handlers.add_batch,
         commands.ChangeBatchQuantity: handlers.change_batch_quantity,
         commands.Allocate: handlers.allocate,
+        commands.Deallocate: handlers.deallocate,
     }
     EVENT_HANDLERS: Dict[Type[events.Event], List[Callable]] = {
         events.Allocated: [
@@ -76,6 +75,14 @@ class MessageBus(AbstractMessageBus):
         events.Deallocated: [
             handlers.publish_deallocated_event,
             handlers.remove_allocation_from_read_model,
+        ],
+        events.ProductCreated: [
+            handlers.publish_product_created_event,
+            handlers.add_product_to_read_model,
+        ],
+        events.BatchCreated: [
+            handlers.publish_batch_created_event,
+            handlers.add_batch_to_read_model,
         ],
         events.OutOfStock: [handlers.send_out_of_stock_notification],
     }

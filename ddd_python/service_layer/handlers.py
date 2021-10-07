@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import List, Optional, Union
 
 from ddd_python.domain import commands, events, model
 
@@ -24,15 +24,6 @@ def allocate(
         raise errors.InvalidSku(f"Invalid sku {command.sku}")
 
 
-def list_products(
-    command: commands.GetProducts,
-    uow: unit_of_work.AbstractUnitOfWork,
-):
-    with uow:
-        products = uow.products.list()
-        return [{"sku": product.sku} for product in products]
-
-
 def add_product(
     command: commands.CreateProduct,
     uow: unit_of_work.AbstractUnitOfWork,
@@ -42,18 +33,6 @@ def add_product(
         uow.products.add(product)
         uow.commit()
         return product.sku
-
-
-def list_batches(
-    command: commands.GetBatches,
-    uow: unit_of_work.AbstractUnitOfWork,
-) -> List[Dict[str, object]]:
-    with uow:
-        product = uow.products.get(command.sku)
-        batches = [
-            {"ref": batch.reference, "eta": batch.eta} for batch in product.batches
-        ]
-        return batches
 
 
 def add_batch(
@@ -77,6 +56,14 @@ def change_batch_quantity(
     with uow:
         product = uow.products.get_by_batchref(batchref=command.ref)
         product.change_batch_quantity(ref=command.ref, qty=command.qty)
+        uow.commit()
+
+
+def deallocate(command: commands.Deallocate, uow: unit_of_work.AbstractUnitOfWork):
+    with uow:
+        line = model.OrderLine(command.orderid, command.sku, command.qty)
+        product = uow.products.get_by_batchref(batchref=command.ref)
+        product.deallocate(ref=command.ref, line=line)
         uow.commit()
 
 
@@ -138,5 +125,53 @@ def remove_allocation_from_read_model(
             WHERE orderid = :orderid AND sku = :sku
             """,
             {"orderid": event.orderid, "sku": event.sku},
+        )
+        uow.commit()
+
+
+def publish_product_created_event(
+    event: events.Allocated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    uow.event_publisher.publish("product_created", event)
+
+
+def add_product_to_read_model(
+    event: events.Allocated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    with uow:
+        uow.execute(
+            """
+            INSERT INTO products_view (sku)
+            VALUES (:sku)
+            """,
+            {"sku": event.sku},
+        )
+        uow.commit()
+
+
+def publish_batch_created_event(
+    event: events.ProductCreated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    uow.event_publisher.publish("batch_created", event)
+
+
+def add_batch_to_read_model(
+    event: events.BatchCreated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    with uow:
+        uow.execute(
+            """
+            INSERT INTO batches_view (sku, reference, eta)
+            VALUES (:sku, :reference, :eta)
+            """,
+            {"sku": event.sku, "reference": event.reference, "eta": event.eta},
         )
         uow.commit()

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date
 
 
 class Event:
@@ -22,3 +23,15 @@ class Allocated(Event):
 class Deallocated(Event):
     orderid: str
     sku: str
+
+
+@dataclass
+class ProductCreated(Event):
+    sku: str
+
+
+@dataclass
+class BatchCreated(Event):
+    sku: str
+    reference: str
+    eta: date

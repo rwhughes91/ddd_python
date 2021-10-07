@@ -44,6 +44,20 @@ allocations_view = Table(
     Column("batchref", String(255)),
 )
 
+products_view = Table(
+    "products_view",
+    metadata,
+    Column("sku", String(255)),
+)
+
+batches_view = Table(
+    "batches_view",
+    metadata,
+    Column("sku", String(255)),
+    Column("reference", String(255)),
+    Column("eta", Date),
+)
+
 
 def start_mappers():
     mapper_registry.map_imperatively(model.OrderLine, order_lines)

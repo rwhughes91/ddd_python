@@ -10,6 +10,8 @@ from ddd_python.service_layer.messagebus import MessageBus
 
 app = Flask(__name__)
 
+orm.start_mappers()
+
 
 @app.route("/allocate", methods=["POST"])
 def allocate_endpoint():
@@ -31,8 +33,8 @@ def allocate_endpoint():
     return {"batchref": batchref}, 201
 
 
-@app.route("/products", methods=["GET"])
-def list_products():
+@app.route("/deallocate", methods=["POST"])
+def deallocate():
     uow = unit_of_work.SqlAlchemyUnitOfWork(
         email.FakeEmailAdapter(),
         event_publisher=event_publisher.RedisPublisherAdapter(
@@ -40,9 +42,29 @@ def list_products():
         ),
     )
     messagebus = MessageBus(uow)
-    results = messagebus.handle(commands.GetProducts())
-    products = results.pop(0)
-    return {"products": products}, 200
+    messagebus.handle(
+        commands.Deallocate(
+            request.json.get("ref"),
+            request.json.get("orderid"),
+            request.json.get("sku"),
+            request.json.get("qty"),
+        )
+    )
+    return 200
+
+
+# @app.route("/products", methods=["GET"])
+# def list_products():
+#     uow = unit_of_work.SqlAlchemyUnitOfWork(
+#         email.FakeEmailAdapter(),
+#         event_publisher=event_publisher.RedisPublisherAdapter(
+#             host=redis_host, port=redis_port
+#         ),
+#     )
+#     messagebus = MessageBus(uow)
+#     results = messagebus.handle(commands.GetProducts())
+#     products = results.pop(0)
+#     return {"products": products}, 200
 
 
 @app.route("/products", methods=["POST"])
@@ -59,18 +81,18 @@ def add_products():
     return {"productref": productref}, 201
 
 
-@app.route("/batches/<sku>", methods=["GET"])
-def list_batches(sku):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(
-        email.FakeEmailAdapter(),
-        event_publisher=event_publisher.RedisPublisherAdapter(
-            host=redis_host, port=redis_port
-        ),
-    )
-    messagebus = MessageBus(uow)
-    results = messagebus.handle(commands.GetBatches(sku))
-    batches = results.pop(0)
-    return {"batches": batches}, 200
+# @app.route("/batches/<sku>", methods=["GET"])
+# def list_batches(sku):
+#     uow = unit_of_work.SqlAlchemyUnitOfWork(
+#         email.FakeEmailAdapter(),
+#         event_publisher=event_publisher.RedisPublisherAdapter(
+#             host=redis_host, port=redis_port
+#         ),
+#     )
+#     messagebus = MessageBus(uow)
+#     results = messagebus.handle(commands.GetBatches(sku))
+#     batches = results.pop(0)
+#     return {"batches": batches}, 200
 
 
 @app.route("/batches", methods=["POST"])
@@ -113,5 +135,4 @@ def edit_batch():
 
 
 if __name__ == "__main__":
-    orm.start_mappers()
     app.run(port=5000)
