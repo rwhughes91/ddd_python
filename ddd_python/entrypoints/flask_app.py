@@ -128,7 +128,7 @@ def products_view():
     return {"products": views.products(uow)}
 
 
-@app.route("/batches/<sku>", methods=["GET"])
+@app.route("/products/<sku>/batches", methods=["GET"])
 def batches_view(sku):
     uow = unit_of_work.SqlAlchemyUnitOfWork(
         email.FakeEmailAdapter(),

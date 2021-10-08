@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
+from typing import Union
 
 
 class Event:
@@ -34,4 +35,4 @@ class ProductCreated(Event):
 class BatchCreated(Event):
     sku: str
     reference: str
-    eta: date
+    eta: Union[str, date]

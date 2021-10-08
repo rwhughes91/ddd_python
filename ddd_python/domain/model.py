@@ -160,6 +160,10 @@ class Product:
                 raise InvalidETA("ETA cannot be in the past")
             current_batches.add(batch)
         self.batches = list(current_batches)
+        self.events.extend(
+            events.BatchCreated(sku=batch.sku, reference=batch.reference, eta=batch.eta)
+            for batch in batches
+        )
         self.version_number += 1
         return [batch for batch in self.batches if not batch.has_allocations]
 

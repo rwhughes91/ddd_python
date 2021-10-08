@@ -21,7 +21,6 @@ class AbstractMessageBus:
 
     def _handle_event(self, event: events.Event):
         for handler in self.EVENT_HANDLERS[type(event)]:
-            print("handling event", handler)
             try:
 
                 @retry(tries=3, delay=2, backoff=1)

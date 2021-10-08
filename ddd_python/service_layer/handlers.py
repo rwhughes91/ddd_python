@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List, Optional, Union
 
 from ddd_python.domain import commands, events, model
@@ -158,6 +159,8 @@ def publish_batch_created_event(
     uow: unit_of_work.AbstractUnitOfWork,
     queue: Optional[Messages],
 ):
+    if isinstance(event.eta, date):
+        event.eta = event.eta.strftime("%m/%d/%Y")
     uow.event_publisher.publish("batch_created", event)
 
 
