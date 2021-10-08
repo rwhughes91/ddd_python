@@ -56,6 +56,7 @@ batches_view = Table(
     Column("sku", String(255)),
     Column("reference", String(255)),
     Column("eta", Date),
+    Column("qty", Integer),
 )
 
 
