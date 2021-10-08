@@ -125,7 +125,7 @@ def products_view():
             host=redis_host, port=redis_port
         ),
     )
-    return views.products(uow)
+    return {"products": views.products(uow)}
 
 
 @app.route("/batches/<sku>", methods=["GET"])
@@ -136,7 +136,7 @@ def batches_view(sku):
             host=redis_host, port=redis_port
         ),
     )
-    return views.batches(sku, uow)
+    return {"batches": views.batches(sku, uow)}
 
 
 @app.route("/allocations/<orderid>", methods=["GET"])
@@ -147,7 +147,7 @@ def allocations_view(orderid):
             host=redis_host, port=redis_port
         ),
     )
-    return views.allocations(orderid, uow)
+    return {"allocations": views.allocations(orderid, uow)}
 
 
 if __name__ == "__main__":

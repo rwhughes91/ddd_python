@@ -130,7 +130,7 @@ def remove_allocation_from_read_model(
 
 
 def publish_product_created_event(
-    event: events.Allocated,
+    event: events.ProductCreated,
     uow: unit_of_work.AbstractUnitOfWork,
     queue: Optional[Messages],
 ):
@@ -138,7 +138,7 @@ def publish_product_created_event(
 
 
 def add_product_to_read_model(
-    event: events.Allocated,
+    event: events.ProductCreated,
     uow: unit_of_work.AbstractUnitOfWork,
     queue: Optional[Messages],
 ):
@@ -154,7 +154,7 @@ def add_product_to_read_model(
 
 
 def publish_batch_created_event(
-    event: events.ProductCreated,
+    event: events.BatchCreated,
     uow: unit_of_work.AbstractUnitOfWork,
     queue: Optional[Messages],
 ):

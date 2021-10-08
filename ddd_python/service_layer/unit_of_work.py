@@ -74,7 +74,7 @@ class FakeUnitOfWork(AbstractUnitOfWork):
 
 DEFAULT_SESSION_FACTORY = sessionmaker(
     bind=create_engine(
-        config.postgres_uri, isolation_level="REPEATABLE READ", echo=True
+        config.postgres_uri, isolation_level="REPEATABLE READ", echo=False
     )
 )
 
@@ -103,4 +103,4 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.session.rollback()
 
     def execute(self, query: str, payload: Payload = None):
-        return self.session.execute(query)
+        return self.session.execute(query, payload)

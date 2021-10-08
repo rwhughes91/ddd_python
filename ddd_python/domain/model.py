@@ -113,9 +113,11 @@ class Product:
         return instance
 
     def __init__(self, sku: str, batches: List[Batch], version_number: int = 0):
+        # this will not be called when ORM is mapped
         self.sku = sku
         self.batches = batches
         self.version_number = version_number
+        self.events.append(events.ProductCreated(sku))
 
     def __eq__(self, other):
         if not isinstance(other, Product):

@@ -207,11 +207,12 @@ Notes
    3c. This insight is key to understanding why reads can be safely inconsistent: we’ll always need to check the current state of our system when we come to allocate, because all distributed systems are inconsistent. **As soon as you have a web server and two customers, you have the potential for stale data.**
 3. Its always felt weird that we put list_batches and list_products as commands and in our handlers. Even if you decide not to go with CQRS, its a good idea to move views into their own spot of the system
 4. Implementing views is a bit different than one first expects
-   4a. Its not very efficient to use our repositories. For one, our repositories point to aggregates and we may want to view grab random data by certain conditions, sorted in specific ways, with different types of joins. If we used our repository, it would be much slower than it needs to be. In fact, writing raw sql to sqlalchemy would be the most efficient way to do this.
-   4b. Secondly, our reads do not need our domain models, so we dont want our ORM to map the results to these objects. Again, raw sql prevents this.
-   4c. ORMs can also lead to n+1 problems (not often), but raw sql again solves this issue. As weird as it sounds, we are going to write our views with raw sql!
+   4a. Its not very efficient to use our repositories. For one, our repositories point to aggregates and we may want to view grab random data by certain conditions, sorted in specific ways, with different types of joins. If we used our repository, it would be much slower than it needs to be. In fact, writing raw sql to sqlalchemy would be the most efficient way to do this. We could have sqlalchemy models that get you lists and that could solve this problem too.
+   4b. Secondly, our reads do not need our domain models, so we dont want our ORM to map the results to these objects. Again, raw sql prevents this. Using sqlalchemy models would NOT solve this. We would need to map to sqlalchemy models and then to output DTO.
+   4c. ORMs can also lead to n+1 problems (not often), but raw sql again solves this issue. To be fair, sqlalchemy is great at preventing this, and uses DB views in an amazing way.
+   4d. As weird as it sounds, using raw sql for views is actually the best way to handle this.
 5. Another common feature in CQRS (even when done in the same service) is to have a **denormalized data source**, which makes reading even faster (no joins -- like WAY faster -- faster than even the most perfect indexes provide), and greatly simplifies our sql queries
-6. Lastly, we need a way to update this read table.
+6. Lastly, we need a way to update this read table, so we raise Events and make event handlers to update the Db! Important Note: we have repeatable read as an isolation level for our DB. We aren't implementing aggregates so serialization errors will happen a lot less, but will still happen. If we had another database, that had the default isolation level **Read Committed**, these serialization errors wouldn't happen at all (which gives a nudge to making view their own service).
 
 # Outstanding Problems
 
