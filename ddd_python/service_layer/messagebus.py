@@ -85,6 +85,10 @@ class MessageBus(AbstractMessageBus):
             handlers.publish_batch_created_event,
             handlers.add_batch_to_read_model,
         ],
+        events.BatchQuantityChanged: [
+            handlers.publish_batch_quantity_changed,
+            handlers.edit_batch_qty_to_read_model,
+        ],
         events.OutOfStock: [handlers.send_out_of_stock_notification],
     }
 

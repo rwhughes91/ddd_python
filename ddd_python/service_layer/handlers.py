@@ -178,3 +178,28 @@ def add_batch_to_read_model(
             {"sku": event.sku, "reference": event.reference, "eta": event.eta},
         )
         uow.commit()
+
+
+def publish_batch_quantity_changed(
+    event: events.BatchQuantityChanged,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    uow.event_publisher.publish("batch_quantity_changed", event)
+
+
+def edit_batch_qty_to_read_model(
+    event: events.BatchQuantityChanged,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    with uow:
+        uow.execute(
+            """
+            UPDATE batches_view
+            SET qty = :qty
+            WHERE ref = :ref
+            """,
+            {"ref": event.ref, "qty": event.qty},
+        )
+        uow.commit()

@@ -10,7 +10,7 @@ from ddd_python.adapters import repository
 from ddd_python.adapters.email import AbstractEmailAdapter
 from ddd_python.adapters.event_publisher import AbstractPublisherAdapter
 
-Payload = Optional[Dict[str, Union[str, date]]]
+Payload = Optional[Dict[str, Union[str, date, int]]]
 
 
 class AbstractUnitOfWork(ABC):

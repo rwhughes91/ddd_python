@@ -24,32 +24,7 @@ class RedisMessage:
         self.data = json.loads(data)
 
 
-def allocate_endpoint(message: RedisMessage):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(
-        email.FakeEmailAdapter(),
-        event_publisher=event_publisher.RedisPublisherAdapter(
-            host=redis_host, port=redis_port
-        ),
-    )
-    messagebus = MessageBus(uow)
-    messagebus.handle(
-        commands.Allocate(
-            message.data.get("orderid", ""),
-            message.data.get("sku", ""),
-            int(message.data.get("qty", 0)),
-        )
-    )
-
-
-def list_products(message: RedisMessage):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(
-        email.FakeEmailAdapter(),
-        event_publisher=event_publisher.RedisPublisherAdapter(
-            host=redis_host, port=redis_port
-        ),
-    )
-    messagebus = MessageBus(uow)
-    messagebus.handle(commands.GetProducts())
+# Products
 
 
 def add_products(message: RedisMessage):
@@ -63,15 +38,7 @@ def add_products(message: RedisMessage):
     messagebus.handle(commands.CreateProduct(message.data.get("sku", "")))
 
 
-def list_batches(message: RedisMessage):
-    uow = unit_of_work.SqlAlchemyUnitOfWork(
-        email.FakeEmailAdapter(),
-        event_publisher=event_publisher.RedisPublisherAdapter(
-            host=redis_host, port=redis_port
-        ),
-    )
-    messagebus = MessageBus(uow)
-    messagebus.handle(commands.GetBatches(message.data.get("sku", "")))
+# Batches
 
 
 def add_batch(message: RedisMessage):
@@ -93,7 +60,7 @@ def add_batch(message: RedisMessage):
     )
 
 
-def edit_batch(message: RedisMessage):
+def change_batch_quantity(message: RedisMessage):
     uow = unit_of_work.SqlAlchemyUnitOfWork(
         email.FakeEmailAdapter(),
         event_publisher=event_publisher.RedisPublisherAdapter(
@@ -108,13 +75,31 @@ def edit_batch(message: RedisMessage):
     )
 
 
+# Allocations
+
+
+def allocate_endpoint(message: RedisMessage):
+    uow = unit_of_work.SqlAlchemyUnitOfWork(
+        email.FakeEmailAdapter(),
+        event_publisher=event_publisher.RedisPublisherAdapter(
+            host=redis_host, port=redis_port
+        ),
+    )
+    messagebus = MessageBus(uow)
+    messagebus.handle(
+        commands.Allocate(
+            message.data.get("orderid", ""),
+            message.data.get("sku", ""),
+            int(message.data.get("qty", 0)),
+        )
+    )
+
+
 ENTRYPOINTS: Dict[str, Callable] = {
     "allocate": allocate_endpoint,
-    "list_products": list_products,
     "add_products": add_products,
-    "list_batches": list_batches,
     "add_batch": add_batch,
-    "change_batch_quantity": edit_batch,
+    "change_batch_quantity": change_batch_quantity,
 }
 
 if __name__ == "__main__":
@@ -123,9 +108,7 @@ if __name__ == "__main__":
     pubsub = r.pubsub(ignore_subscribe_messages=True)
     pubsub.subscribe(
         "allocate",
-        "list_products",
         "add_products",
-        "list_batches",
         "add_batch",
         "change_batch_quantity",
     )

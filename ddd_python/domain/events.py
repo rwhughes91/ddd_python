@@ -36,3 +36,9 @@ class BatchCreated(Event):
     sku: str
     reference: str
     eta: Union[str, date]
+
+
+@dataclass
+class BatchQuantityChanged(Event):
+    ref: str
+    qty: int

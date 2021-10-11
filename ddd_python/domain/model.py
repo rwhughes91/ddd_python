@@ -170,7 +170,9 @@ class Product:
     def change_batch_quantity(self, ref: str, qty: int):
         batch = next(b for b in self.batches if b.reference == ref)
         batch._purchased_quantity = qty
+        self.events.append(events.BatchQuantityChanged(ref=ref, qty=qty))
         self.version_number += 1
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
+            self.events.append(events.Deallocated(orderid=line.orderid, sku=line.sku))
             self.events.append(commands.Allocate(line.orderid, line.sku, line.qty))
