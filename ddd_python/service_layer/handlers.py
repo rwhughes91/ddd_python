@@ -172,10 +172,15 @@ def add_batch_to_read_model(
     with uow:
         uow.execute(
             """
-            INSERT INTO batches_view (sku, reference, eta)
-            VALUES (:sku, :reference, :eta)
+            INSERT INTO batches_view (sku, reference, eta, qty)
+            VALUES (:sku, :reference, :eta, :qty)
             """,
-            {"sku": event.sku, "reference": event.reference, "eta": event.eta},
+            {
+                "sku": event.sku,
+                "reference": event.reference,
+                "eta": event.eta,
+                "qty": event.qty,
+            },
         )
         uow.commit()
 
@@ -198,7 +203,7 @@ def edit_batch_qty_to_read_model(
             """
             UPDATE batches_view
             SET qty = :qty
-            WHERE ref = :ref
+            WHERE reference = :ref
             """,
             {"ref": event.ref, "qty": event.qty},
         )

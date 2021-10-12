@@ -161,7 +161,12 @@ class Product:
             current_batches.add(batch)
         self.batches = list(current_batches)
         self.events.extend(
-            events.BatchCreated(sku=batch.sku, reference=batch.reference, eta=batch.eta)
+            events.BatchCreated(
+                sku=batch.sku,
+                reference=batch.reference,
+                eta=batch.eta,
+                qty=batch._purchased_quantity,
+            )
             for batch in batches
         )
         self.version_number += 1

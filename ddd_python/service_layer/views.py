@@ -26,8 +26,11 @@ def batches(sku: str, uow: unit_of_work.AbstractUnitOfWork):
     with uow:
         batches = uow.execute(
             """
-            SELECT reference, eta FROM batches_view WHERE sku = :sku
+            SELECT reference, eta, qty FROM batches_view WHERE sku = :sku
             """,
             {"sku": sku},
         )
-        return [{"ref": batch.reference, "eta": batch.eta} for batch in batches]
+        return [
+            {"ref": batch.reference, "eta": batch.eta, "qty": batch.qty}
+            for batch in batches
+        ]
