@@ -1,4 +1,5 @@
-from typing import Dict, List, Optional, Union
+from datetime import date
+from typing import List, Optional, Union
 
 from ddd_python.domain import commands, events, model
 
@@ -24,15 +25,6 @@ def allocate(
         raise errors.InvalidSku(f"Invalid sku {command.sku}")
 
 
-def list_products(
-    command: commands.GetProducts,
-    uow: unit_of_work.AbstractUnitOfWork,
-):
-    with uow:
-        products = uow.products.list()
-        return [{"sku": product.sku} for product in products]
-
-
 def add_product(
     command: commands.CreateProduct,
     uow: unit_of_work.AbstractUnitOfWork,
@@ -42,18 +34,6 @@ def add_product(
         uow.products.add(product)
         uow.commit()
         return product.sku
-
-
-def list_batches(
-    command: commands.GetBatches,
-    uow: unit_of_work.AbstractUnitOfWork,
-) -> List[Dict[str, object]]:
-    with uow:
-        product = uow.products.get(command.sku)
-        batches = [
-            {"ref": batch.reference, "eta": batch.eta} for batch in product.batches
-        ]
-        return batches
 
 
 def add_batch(
@@ -80,6 +60,14 @@ def change_batch_quantity(
         uow.commit()
 
 
+def deallocate(command: commands.Deallocate, uow: unit_of_work.AbstractUnitOfWork):
+    with uow:
+        line = model.OrderLine(command.orderid, command.sku, command.qty)
+        product = uow.products.get_by_batchref(batchref=command.ref)
+        product.deallocate(ref=command.ref, line=line)
+        uow.commit()
+
+
 # EVENTS
 
 
@@ -100,3 +88,123 @@ def publish_allocated_event(
     queue: Optional[Messages],
 ):
     uow.event_publisher.publish("line_allocated", event)
+
+
+def publish_deallocated_event(
+    event: events.Allocated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    uow.event_publisher.publish("line_deallocated", event)
+
+
+def add_allocation_to_read_model(
+    event: events.Allocated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    with uow:
+        uow.execute(
+            """
+            INSERT INTO allocations_view (orderid, sku, batchref)
+            VALUES (:orderid, :sku, :batchref)
+            """,
+            {"orderid": event.orderid, "sku": event.sku, "batchref": event.batchref},
+        )
+        uow.commit()
+
+
+def remove_allocation_from_read_model(
+    event: events.Deallocated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    with uow:
+        uow.execute(
+            """
+            DELETE FROM allocations_view
+            WHERE orderid = :orderid AND sku = :sku
+            """,
+            {"orderid": event.orderid, "sku": event.sku},
+        )
+        uow.commit()
+
+
+def publish_product_created_event(
+    event: events.ProductCreated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    uow.event_publisher.publish("product_created", event)
+
+
+def add_product_to_read_model(
+    event: events.ProductCreated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    with uow:
+        uow.execute(
+            """
+            INSERT INTO products_view (sku)
+            VALUES (:sku)
+            """,
+            {"sku": event.sku},
+        )
+        uow.commit()
+
+
+def publish_batch_created_event(
+    event: events.BatchCreated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    if isinstance(event.eta, date):
+        event.eta = event.eta.strftime("%m/%d/%Y")
+    uow.event_publisher.publish("batch_created", event)
+
+
+def add_batch_to_read_model(
+    event: events.BatchCreated,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    with uow:
+        uow.execute(
+            """
+            INSERT INTO batches_view (sku, reference, eta, qty)
+            VALUES (:sku, :reference, :eta, :qty)
+            """,
+            {
+                "sku": event.sku,
+                "reference": event.reference,
+                "eta": event.eta,
+                "qty": event.qty,
+            },
+        )
+        uow.commit()
+
+
+def publish_batch_quantity_changed(
+    event: events.BatchQuantityChanged,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    uow.event_publisher.publish("batch_quantity_changed", event)
+
+
+def edit_batch_qty_to_read_model(
+    event: events.BatchQuantityChanged,
+    uow: unit_of_work.AbstractUnitOfWork,
+    queue: Optional[Messages],
+):
+    with uow:
+        uow.execute(
+            """
+            UPDATE batches_view
+            SET qty = :qty
+            WHERE reference = :ref
+            """,
+            {"ref": event.ref, "qty": event.qty},
+        )
+        uow.commit()

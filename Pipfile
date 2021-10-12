@@ -10,6 +10,7 @@ psycopg2 = "*"
 flask = "*"
 tenacity = "*"
 redis = "*"
+retry = "*"
 
 [dev-packages]
 pytest = "*"

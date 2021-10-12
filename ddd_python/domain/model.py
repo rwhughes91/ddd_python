@@ -113,9 +113,11 @@ class Product:
         return instance
 
     def __init__(self, sku: str, batches: List[Batch], version_number: int = 0):
+        # this will not be called when ORM is mapped
         self.sku = sku
         self.batches = batches
         self.version_number = version_number
+        self.events.append(events.ProductCreated(sku))
 
     def __eq__(self, other):
         if not isinstance(other, Product):
@@ -129,7 +131,6 @@ class Product:
         try:
             batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
             batch.allocate(line)
-            self.version_number += 1
             self.events.append(
                 events.Allocated(
                     orderid=line.orderid,
@@ -138,9 +139,16 @@ class Product:
                     batchref=batch.reference,
                 )
             )
+            self.version_number += 1
             return batch.reference
         except StopIteration:
             self.events.append(events.OutOfStock(self.sku))
+
+    def deallocate(self, ref: str, line: OrderLine):
+        batch = next(b for b in self.batches if b.reference == ref)
+        batch.deallocate(line)
+        self.version_number += 1
+        self.events.append(events.Deallocated(orderid=line.orderid, sku=line.sku))
 
     def add_batches(self, batches: List[Batch]):
         today = date.today()
@@ -152,12 +160,24 @@ class Product:
                 raise InvalidETA("ETA cannot be in the past")
             current_batches.add(batch)
         self.batches = list(current_batches)
+        self.events.extend(
+            events.BatchCreated(
+                sku=batch.sku,
+                reference=batch.reference,
+                eta=batch.eta,
+                qty=batch._purchased_quantity,
+            )
+            for batch in batches
+        )
         self.version_number += 1
         return [batch for batch in self.batches if not batch.has_allocations]
 
     def change_batch_quantity(self, ref: str, qty: int):
         batch = next(b for b in self.batches if b.reference == ref)
         batch._purchased_quantity = qty
+        self.events.append(events.BatchQuantityChanged(ref=ref, qty=qty))
+        self.version_number += 1
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
+            self.events.append(events.Deallocated(orderid=line.orderid, sku=line.sku))
             self.events.append(commands.Allocate(line.orderid, line.sku, line.qty))
