@@ -11,6 +11,7 @@ flask = "*"
 tenacity = "*"
 redis = "*"
 retry = "*"
+gunicorn = "*"
 
 [dev-packages]
 pytest = "*"

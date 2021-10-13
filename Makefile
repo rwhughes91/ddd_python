@@ -41,3 +41,6 @@ downgrade:
 
 head:
 	alembic current
+
+run_flask:
+	gunicorn --enable-stdio-inheritance --log-level debug --bind 0.0.0.0:5443 --workers=2 --threads=4 --worker-class=gthread ddd_python.entrypoints.flask_app:app
