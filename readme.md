@@ -214,6 +214,22 @@ Notes
 5. Another common feature in CQRS (even when done in the same service) is to have a **denormalized data source**, which makes reading even faster (no joins -- like WAY faster -- faster than even the most perfect indexes provide), and greatly simplifies our sql queries
 6. Lastly, we need a way to update this read table, so we raise Events and make event handlers to update the Db! Important Note: we have repeatable read as an isolation level for our DB. We aren't implementing aggregates so serialization errors will happen a lot less, but will still happen. If we had another database, that had the default isolation level **Read Committed**, these serialization errors wouldn't happen at all (which gives a nudge to making view their own service).
 
+# Ch 11 Dependency Injection
+
+Problem
+
+1. So currently, for every single adapter we have, we pass it into our uow to pass to our messagebus. Its not a big deal, but for every single endpoint we need to create a new instance (we need to do this because our classes mutate their data and will be shared across threads -- so its safer to init in each endpoint). All of this, especially when our app gets very large, is cumbersome because of the repetition.
+2. So we want to create a class that orchestrates our adapters, and gives us a new message bus every time its called
+
+Notes
+
+1. We will be using DI to orchestrate our adapters, but we can also use this bootstrap class to inject event handlers and/or command handlers into the messagebus. Maybe you only want your flask app to send emails on OutOfStock or something.
+2. Earlier we decided to add adapters to our UOW, but remember you could also pass these to the message bus
+
+Solution
+
+1. We will use dependency injection, or a bootstrap class to help us orchestrate. More often than not, a lot of our adapters will be used together (like Fake\*Adapters), so DI can help a lot with this.
+
 # Outstanding Problems
 
 1. retry logic for serialization errors that happen from concurrent transactions
